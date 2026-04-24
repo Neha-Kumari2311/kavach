@@ -57,6 +57,7 @@ export const PUBLIC_ROUTES = [
   '/api/auth/signin',
   '/api/auth/signout',
   '/api/auth/register',
+  '/api/auth/reset-password',
 ];
 
 /**

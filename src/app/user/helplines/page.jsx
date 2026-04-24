@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import UserDashboardHeader from '@/components/dashboard/UserDashboardHeader';
+import { useSafetyScore } from '@/hooks/useSafetyScore';
 import BottomNavigation from '@/components/BottomNavigation';
 
 const INDIAN_STATES = [
@@ -56,10 +58,14 @@ const CATEGORY_ICONS = {
 
 export default function HelplinesPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [helplines, setHelplines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedState, setSelectedState] = useState('');
+
+  // Safety score from shared context
+  const { safetyScore, safetyLabel, safetyColor, loading: safetyLoading } = useSafetyScore();
 
   // Fetch helplines on mount and when state changes
   useEffect(() => {
@@ -105,8 +111,11 @@ export default function HelplinesPage() {
   return (
     <div className="bg-[#f7f6f8] dark:bg-[#181121] font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
       <UserDashboardHeader
-        userName="User"
-        safetyStatus="Secure"
+        userName={session?.user?.name?.split(' ')[0] || 'User'}
+        safetyScore={safetyScore}
+        safetyLabel={safetyLabel}
+        safetyColor={safetyColor}
+        safetyLoading={safetyLoading}
         onNotificationClick={() => router.push('/user/notifications')}
       />
       <main className="flex-1 px-4 pb-24 max-w-md mx-auto w-full space-y-6">

@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocationTracking } from "@/hooks/useLocationTracking";
+import { useSafetyScore } from "@/hooks/useSafetyScore";
 import UserDashboardHeader from "@/components/dashboard/UserDashboardHeader";
 import EmergencySOSButton from "@/components/dashboard/EmergencySOSButton";
 import LiveLocationCard from "@/components/dashboard/LiveLocationCard";
@@ -24,12 +25,16 @@ export default function UserDashboardPage() {
   const [lastLocationUpdate, setLastLocationUpdate] = useState(null);
   const [trustedContacts, setTrustedContacts] = useState([]);
   const [contactsLoading, setContactsLoading] = useState(true);
+  const [liveCoords, setLiveCoords] = useState(null);
 
   // Fake Call state
   const [showFakeCallSettings, setShowFakeCallSettings] = useState(false);
   const [showFakeCall, setShowFakeCall] = useState(false);
   const [fakeCallCaller, setFakeCallCaller] = useState("Mom");
   const fakeCallTimerRef = useRef(null);
+
+  // Dynamic safety score — from shared context (persists across page navigation)
+  const { safetyScore, safetyLabel, safetyColor, loading: safetyLoading, refreshSafetyScore } = useSafetyScore();
 
   const isActive = (path) => pathname === path;
 
@@ -45,6 +50,10 @@ export default function UserDashboardPage() {
     (data) => {
       setLastLocationUpdate(new Date());
       setLocationError("");
+      // Capture coordinates from the location update for safety score
+      if (data?.location) {
+        setLiveCoords({ lat: data.location.latitude, lng: data.location.longitude });
+      }
       console.log("Location updated:", data);
     },
   );
@@ -112,8 +121,15 @@ export default function UserDashboardPage() {
         return;
       }
       navigator.geolocation.getCurrentPosition(
-        () => {
+        (position) => {
           setLocationError("");
+          const newCoords = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setLiveCoords(newCoords);
+          // Trigger a fresh safety score fetch via shared context
+          refreshSafetyScore(newCoords);
         },
         (error) => {
           setIsTrackingEnabled(false);
@@ -136,6 +152,7 @@ export default function UserDashboardPage() {
       );
     } else {
       setLocationError("");
+      setLiveCoords(null);
     }
   };
 
@@ -163,10 +180,13 @@ export default function UserDashboardPage() {
 
   return (
     <div className="bg-[#f7f6f8] dark:bg-[#181121] font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
-      {/* Pass dynamic userName from session */}
+      {/* Pass dynamic userName and safety score from hook */}
       <UserDashboardHeader
         userName={userName}
-        safetyStatus="Secure"
+        safetyScore={safetyScore}
+        safetyLabel={safetyLabel}
+        safetyColor={safetyColor}
+        safetyLoading={safetyLoading}
         onNotificationClick={() => console.log("Notifications clicked")}
       />
 
@@ -203,10 +223,21 @@ export default function UserDashboardPage() {
           location="Mumbai"
           isTrackingEnabled={isTrackingEnabled}
           onToggleTracking={handleToggleTracking}
+          onCoordsChange={(newCoords) => {
+            // Keep central coords in sync with LiveLocationCard's own position watcher
+            if (newCoords && isTrackingEnabled) {
+              setLiveCoords(newCoords);
+            }
+          }}
           onViewMap={() => {
             // Open live location in Google Maps
             try {
-              if (navigator.geolocation) {
+              if (liveCoords) {
+                window.open(
+                  `https://maps.google.com/?q=${liveCoords.lat},${liveCoords.lng}`,
+                  "_blank",
+                );
+              } else if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                   (pos) => {
                     window.open(
@@ -332,40 +363,44 @@ export default function UserDashboardPage() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 flex justify-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 py-3 z-50">
-        <div className="max-w-md mx-auto grid grid-cols-3 gap-16">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-100 dark:border-slate-800 px-6 py-3 z-50">
+        <div className="max-w-md mx-auto grid grid-cols-5 gap-1">
           <Link
             href="/user/dashboard"
-            className={`flex flex-col items-center gap-1 ${isActive("/user/dashboard") ? "text-[#8b47eb]" : "text-slate-400 dark:text-slate-500"}`}
+            className="flex flex-col items-center gap-1 text-[#8b47eb]"
           >
-            <span className="material-symbols-outlined">home</span>
-            <span
-              className={`text-[10px] ${isActive("/user/dashboard") ? "font-bold" : "font-medium"}`}
-            >
-              Home
-            </span>
+            <div className="bg-[#8b47eb]/10 px-3 py-1 rounded-full flex flex-col items-center">
+              <span className="material-symbols-outlined fill-1">home</span>
+              <span className="text-[10px] font-bold">Home</span>
+            </div>
           </Link>
           <Link
             href="/user/dashcam"
-            className={`flex flex-col items-center gap-1 ${isActive("/user/dashcam") ? "text-[#8b47eb]" : "text-slate-400 dark:text-slate-500"}`}
+            className="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500 hover:text-[#8b47eb] transition-colors"
           >
             <span className="material-symbols-outlined">videocam</span>
-            <span
-              className={`text-[10px] ${isActive("/user/dashcam") ? "font-bold" : "font-medium"}`}
-            >
-              Dashcam
-            </span>
+            <span className="text-[10px] font-medium">Dashcam</span>
           </Link>
           <Link
+            href="/user/predict"
+            className="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500 hover:text-[#8b47eb] transition-colors"
+          >
+            <span className="material-symbols-outlined">insights</span>
+            <span className="text-[10px] font-medium">Predict</span>
+          </Link>
+          <button
+            onClick={() => window.open('https://ncwapps.nic.in/onlinecomplaintsv2/', '_blank')}
+            className="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500 hover:text-[#8b47eb] transition-colors"
+          >
+            <span className="material-symbols-outlined">gavel</span>
+            <span className="text-[10px] font-medium">Complaint</span>
+          </button>
+          <Link
             href="/user/store"
-            className={`flex flex-col items-center gap-1 ${isActive("/user/store") ? "text-[#8b47eb]" : "text-slate-400 dark:text-slate-500"}`}
+            className="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500 hover:text-[#8b47eb] transition-colors"
           >
             <span className="material-symbols-outlined">shopping_bag</span>
-            <span
-              className={`text-[10px] ${isActive("/user/store") ? "font-bold" : "font-medium"}`}
-            >
-              Store
-            </span>
+            <span className="text-[10px] font-medium">Store</span>
           </Link>
         </div>
       </nav>

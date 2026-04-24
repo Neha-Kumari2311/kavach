@@ -4,9 +4,38 @@ import Image from 'next/image';
 
 export default function UserDashboardHeader({ 
   userName = 'Aditi',
-  safetyStatus = 'Secure',
+  safetyScore = null,
+  safetyLabel = 'Checking...',
+  safetyColor = 'slate',
+  safetyLoading = false,
   onNotificationClick 
 }) {
+  // Color mappings for the safety status
+  const colorMap = {
+    green: {
+      dot: 'bg-green-500',
+      text: 'text-green-600 dark:text-green-400',
+      pulse: false,
+    },
+    amber: {
+      dot: 'bg-amber-500',
+      text: 'text-amber-600 dark:text-amber-400',
+      pulse: false,
+    },
+    red: {
+      dot: 'bg-red-500',
+      text: 'text-red-600 dark:text-red-400',
+      pulse: true,
+    },
+    slate: {
+      dot: 'bg-slate-400',
+      text: 'text-slate-500 dark:text-slate-400',
+      pulse: false,
+    },
+  };
+
+  const colors = colorMap[safetyColor] || colorMap.slate;
+
   return (
     <header className="flex items-center justify-between px-6 py-4 sticky top-0 bg-[#f7f6f8]/80 dark:bg-[#181121]/80 backdrop-blur-md z-30">
       <div className="flex items-center gap-3">
@@ -21,9 +50,26 @@ export default function UserDashboardHeader({
         </div>
         <div>
           <h1 className="text-xl font-bold tracking-tight">Hello, {userName}</h1>
-          <p className="text-xs text-[#8b47eb] font-medium flex items-center gap-1">
-            <span className="size-2 bg-green-500 rounded-full inline-block"></span>
-            Safety Status: {safetyStatus}
+          <p className={`text-xs font-medium flex items-center gap-1 ${colors.text}`}>
+            {safetyLoading ? (
+              <>
+                <span className="size-2 bg-slate-300 rounded-full inline-block animate-pulse"></span>
+                <span className="text-slate-400">Analyzing safety...</span>
+              </>
+            ) : safetyLabel === 'Turn on location' ? (
+              <>
+                <span className="material-symbols-outlined text-xs text-slate-400">location_off</span>
+                <span className="text-slate-400">Enable location tracking ↓</span>
+              </>
+            ) : (
+              <>
+                <span className={`size-2 ${colors.dot} rounded-full inline-block ${colors.pulse ? 'animate-pulse' : ''}`}></span>
+                Safety: {safetyLabel}
+                {safetyScore !== null && (
+                  <span className="text-[10px] opacity-70 ml-0.5">({safetyScore}/100)</span>
+                )}
+              </>
+            )}
           </p>
         </div>
       </div>

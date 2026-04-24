@@ -28,7 +28,7 @@ const getRedirectPath = (role) => {
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('user');
   const [showPassword, setShowPassword] = useState(false);
@@ -42,14 +42,14 @@ export default function LoginPage() {
 
     try {
       const result = await signIn('credentials', {
-        email,
+        login,
         password,
         redirect: false,
       });
 
       if (result?.error) {
         setError(result.error === 'CredentialsSignin' 
-          ? 'Invalid email or password' 
+          ? 'Invalid email/phone or password' 
           : result.error);
         setIsSubmitting(false);
         return;
@@ -148,21 +148,21 @@ export default function LoginPage() {
               <div className="space-y-1.5">
                 <label
                   className="block text-sm font-medium text-slate-700 dark:text-slate-300"
-                  htmlFor="email"
+                  htmlFor="login"
                 >
-                  Email Address
+                  Email or Phone Number
                 </label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">
-                    alternate_email
+                    person
                   </span>
                   <input
-                    id="email"
-                    type="email"
-                    placeholder="name@company.com"
-                    value={email}
+                    id="login"
+                    type="text"
+                    placeholder="name@example.com or 9876543210"
+                    value={login}
                     onChange={(e) => {
-                      setEmail(e.target.value);
+                      setLogin(e.target.value);
                       setError('');
                     }}
                     required

@@ -165,3 +165,20 @@ body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }
+
+/* ===== Predict Safety Animations ===== */
+
+.predict-result-enter {
+  animation: predictSlideUp 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+@keyframes predictSlideUp {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
