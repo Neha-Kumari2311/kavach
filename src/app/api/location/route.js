@@ -1,6 +1,8 @@
 import { apiJson, handleApiError, requireSession } from '@/lib/api-helpers';
 import { createLocationEntry, getLatestLocation } from '@/lib/services/location-service';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/location
  * Store user's current location

@@ -1,6 +1,8 @@
 import { apiJson, handleApiError, requireRole, requireSession } from '@/lib/api-helpers';
 import { createHelpline, listHelplines } from '@/lib/services/helpline-service';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/admin/helplines
  * Create a new helpline (Admin only)

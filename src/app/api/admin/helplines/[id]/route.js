@@ -1,6 +1,8 @@
 import { apiJson, handleApiError, requireRole, requireSession } from '@/lib/api-helpers';
 import { deleteHelplineById, updateHelplineById } from '@/lib/services/helpline-service';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * PUT /api/admin/helplines/:id
  * Update a helpline (Admin only)

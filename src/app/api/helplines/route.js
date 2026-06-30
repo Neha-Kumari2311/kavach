@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { listPublicHelplines } from '@/lib/services/helpline-service';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/helplines
  * Get helplines filtered by state (Public/User access)

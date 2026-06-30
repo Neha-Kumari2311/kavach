@@ -1,6 +1,8 @@
 import { apiJson, handleApiError, requireSession } from '@/lib/api-helpers';
 import { deleteTrustedContact } from '@/lib/services/trusted-contacts-service';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * DELETE /api/trusted-contacts/:id
  * Delete a trusted contact

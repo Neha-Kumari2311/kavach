@@ -3,6 +3,8 @@ import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import { isValidEmail } from '@/lib/utils';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/auth/register
  * Register a new user

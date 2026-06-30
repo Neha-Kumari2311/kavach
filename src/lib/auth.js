@@ -1,4 +1,3 @@
-import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import connectDB from './mongodb';
 import User from '@/models/User';
@@ -104,4 +103,5 @@ export const authOptions = {
   debug: process.env.NODE_ENV === 'development',
 };
 
-export default NextAuth(authOptions);
+// NextAuth handler is created in the API route file, not here.
+// This file only exports authOptions for use in API routes and middleware.
