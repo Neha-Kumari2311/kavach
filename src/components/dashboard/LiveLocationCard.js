@@ -6,6 +6,7 @@ export default function LiveLocationCard({
   location = 'Mumbai',
   isTrackingEnabled = false,
   onToggleTracking,
+  onCoordsChange,
   onViewMap,
   lastUpdate = null
 }) {
@@ -36,6 +37,13 @@ export default function LiveLocationCard({
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
   }, []);
+
+  // Notify parent of coordinate changes so safety score can react
+  useEffect(() => {
+    if (coords && onCoordsChange) {
+      onCoordsChange(coords);
+    }
+  }, [coords, onCoordsChange]);
 
   // Keep location updated while tracking is enabled
   useEffect(() => {

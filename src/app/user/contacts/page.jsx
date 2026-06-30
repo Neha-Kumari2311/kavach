@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useSession } from "next-auth/react";
 import Link from 'next/link';
 import UserDashboardHeader from '@/components/dashboard/UserDashboardHeader';
+import { useSafetyScore } from '@/hooks/useSafetyScore';
+
 export default function ContactsPage() {
   const router = useRouter();
    const { data: session } = useSession(); 
@@ -19,6 +21,9 @@ export default function ContactsPage() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [relation, setRelation] = useState('');
+
+  // Safety score from shared context
+  const { safetyScore, safetyLabel, safetyColor, loading: safetyLoading } = useSafetyScore();
 
   // Fetch contacts on mount
   useEffect(() => {
@@ -136,7 +141,10 @@ export default function ContactsPage() {
     <div className="bg-[#f7f6f8] dark:bg-[#181121] font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
       <UserDashboardHeader
         userName={session?.user?.name || "User"}
-        safetyStatus="Secure"
+        safetyScore={safetyScore}
+        safetyLabel={safetyLabel}
+        safetyColor={safetyColor}
+        safetyLoading={safetyLoading}
         onNotificationClick={() => router.push("/user/notifications")}
       />
       <main className="flex-1 px-4 pb-24 max-w-md mx-auto w-full space-y-6">
@@ -390,13 +398,7 @@ export default function ContactsPage() {
             <span className="material-symbols-outlined">shopping_bag</span>
             <span className="text-[10px] font-medium">Store</span>
           </Link>
-          <Link
-            href="/user/profile"
-            className="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500"
-          >
-            <span className="material-symbols-outlined">account_circle</span>
-            <span className="text-[10px] font-medium">Profile</span>
-          </Link>
+          
         </div>
       </nav>
     </div>

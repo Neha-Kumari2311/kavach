@@ -7,6 +7,7 @@ import Link from 'next/link';
 export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -24,6 +25,16 @@ export default function RegisterPage() {
     setSuccess(false);
 
     // Client-side validation
+    if (!phone || !/^\d{10}$/.test(phone)) {
+      setError('Please enter a valid 10-digit phone number');
+      return;
+    }
+
+    if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -49,7 +60,8 @@ export default function RegisterPage() {
         },
         body: JSON.stringify({
           name,
-          email,
+          phone,
+          email: email || null,
           password,
           accountType,
         }),
@@ -216,7 +228,7 @@ export default function RegisterPage() {
             </label>
             <input
               type="text"
-              placeholder="John Doe"
+              placeholder="Your full name"
               value={name}
               onChange={(e) => {
                 setName(e.target.value);
@@ -228,11 +240,36 @@ export default function RegisterPage() {
             />
           </div>
 
-          {/* Email Address */}
+          {/* Phone Number (Mandatory) */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+              <span className="material-symbols-outlined text-xs">call</span>
+              Phone Number <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">+91</span>
+              <input
+                type="tel"
+                placeholder="9876543210"
+                value={phone}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  setPhone(val);
+                  setError('');
+                }}
+                required
+                disabled={isSubmitting}
+                className="w-full pl-12 pr-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#8b47eb]/20 focus:border-[#8b47eb] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+            </div>
+            <p className="text-[10px] text-slate-400">10-digit mobile number</p>
+          </div>
+
+          {/* Email Address (Optional) */}
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
               <span className="material-symbols-outlined text-xs">alternate_email</span>
-              Email Address
+              Email Address <span className="text-slate-400 font-normal text-xs">(Optional)</span>
             </label>
             <input
               type="email"
@@ -242,7 +279,6 @@ export default function RegisterPage() {
                 setEmail(e.target.value);
                 setError('');
               }}
-              required
               disabled={isSubmitting}
               className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#8b47eb]/20 focus:border-[#8b47eb] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             />
@@ -281,13 +317,13 @@ export default function RegisterPage() {
             </div>
             {/* Password Strength Hint */}
             <div className="flex gap-1 mt-1.5">
-              <div className="h-1 flex-1 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
-              <div className="h-1 flex-1 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
-              <div className="h-1 flex-1 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
-              <div className="h-1 flex-1 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+              <div className={`h-1 flex-1 rounded-full ${password.length >= 2 ? 'bg-[#8b47eb]' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
+              <div className={`h-1 flex-1 rounded-full ${password.length >= 4 ? 'bg-[#8b47eb]' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
+              <div className={`h-1 flex-1 rounded-full ${password.length >= 6 ? 'bg-[#8b47eb]' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
+              <div className={`h-1 flex-1 rounded-full ${password.length >= 8 ? 'bg-[#8b47eb]' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
             </div>
             <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
-              Use at least 8 characters
+              Use at least 6 characters
             </p>
           </div>
 
