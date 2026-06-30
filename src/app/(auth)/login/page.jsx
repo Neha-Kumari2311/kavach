@@ -16,7 +16,7 @@ const ROLE_OPTIONS = [
 const getRedirectPath = (role) => {
   switch (role) {
     case 'user':
-      return 'user/dashboard';
+      return '/user/dashboard';
     case 'company':
       return '/company/dashboard';
     case 'admin':

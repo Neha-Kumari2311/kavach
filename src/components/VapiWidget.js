@@ -49,13 +49,29 @@ export default function VapiWidget() {
             console.log(`[VAPI] 🚨 Emergency keyword detected in final transcript. Dual-track dispatch initiated.`);
 
             // === TRACK A: INSTANT DIRECT DISPATCH (no AI decision delay) ===
-            fetch('/api/sos/trigger', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-            })
-            .then(r => r.json())
-            .then(d => console.log(`[SOS Track A] ✅ Direct dispatch: ${d.message}`))
-            .catch(e => console.error('[SOS Track A] ❌ Failed:', e));
+            (async () => {
+              try {
+                let latitude = 0, longitude = 0;
+                if (navigator.geolocation) {
+                  const pos = await new Promise((resolve, reject) =>
+                    navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
+                  ).catch(() => null);
+                  if (pos) {
+                    latitude = pos.coords.latitude;
+                    longitude = pos.coords.longitude;
+                  }
+                }
+                const r = await fetch('/api/sos/trigger', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ latitude, longitude }),
+                });
+                const d = await r.json();
+                console.log(`[SOS Track A] ✅ Direct dispatch: ${d.message}`);
+              } catch (e) {
+                console.error('[SOS Track A] ❌ Failed:', e);
+              }
+            })();
 
             // === TRACK B: AI VERBAL RESPONSE (simultaneous, non-blocking) ===
             vapiInstance.send({

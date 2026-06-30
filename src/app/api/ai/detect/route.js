@@ -1,5 +1,7 @@
 import { apiJson, handleApiError, requireSession } from '@/lib/api-helpers';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/ai/detect
  *

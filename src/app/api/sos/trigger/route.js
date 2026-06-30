@@ -2,6 +2,8 @@ import { apiJson, handleApiError, requireSession } from "@/lib/api-helpers";
 import { createSosEvent } from "@/lib/services/sos-service";
 import { sendSOS } from "@/lib/sendSOS";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request) {
   try {
     const session = await requireSession(

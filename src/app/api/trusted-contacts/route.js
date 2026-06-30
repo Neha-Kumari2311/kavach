@@ -1,6 +1,8 @@
 import { apiJson, handleApiError, requireSession } from '@/lib/api-helpers';
 import { createTrustedContact, listTrustedContacts } from '@/lib/services/trusted-contacts-service';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/trusted-contacts
  * Add a new trusted contact

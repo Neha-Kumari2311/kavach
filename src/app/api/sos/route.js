@@ -1,6 +1,8 @@
 import { apiJson, handleApiError, requireSession } from '@/lib/api-helpers';
 import { createSosEvent, listSosEventsForUser } from '@/lib/services/sos-service';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/sos
  * Create a new SOS emergency event
