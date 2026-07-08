@@ -73,9 +73,10 @@ export default function ChatWidget() {
           window.open(sosLinks.links[0].whatsappLink, '_blank');
           
           // Also open SMS for the first contact (dual-channel alert)
+          // Use location.href for sms: links — window.open() gets blocked on mobile
           setTimeout(() => {
-            window.open(sosLinks.links[0].smsLink, '_blank');
-          }, 500);
+            window.location.href = sosLinks.links[0].smsLink;
+          }, 800);
 
           setSosAlert(`🚨 SOS sent! ${sosLinks.links.length} contact(s) alerted via WhatsApp + SMS`);
           
@@ -170,11 +171,46 @@ export default function ChatWidget() {
     }
   };
 
+  // Send a message directly (bypasses input state for quick actions)
+  const sendDirectMessage = useCallback((text) => {
+    if (!text || isLoading) return;
+
+    const userMessage = { role: 'user', content: text };
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
+    setInput('');
+
+    if (SOS_KEYWORDS.test(text)) {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: '🚨 I understand you need emergency help. Tap "Confirm SOS" below to alert your trusted contacts with your live location immediately.'
+      }]);
+      setSosConfirmPending(true);
+      return;
+    }
+
+    setIsLoading(true);
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: updatedMessages.map(m => ({ role: m.role, content: m.content })) }),
+    })
+      .then(res => res.ok ? res.json() : Promise.reject(res))
+      .then(data => {
+        setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+        if (data.sosTriggered) setSosConfirmPending(true);
+      })
+      .catch(() => {
+        setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I could not connect right now. If you are in danger, use the SOS button or call 112 immediately.' }]);
+      })
+      .finally(() => setIsLoading(false));
+  }, [messages, isLoading]);
+
   // Quick actions
   const quickActions = [
-    { label: '🆘 Send SOS', action: () => { setInput('Send SOS now'); setTimeout(() => sendMessage(), 50); } },
-    { label: '📞 Helplines', action: () => { setInput('Show emergency helplines'); } },
-    { label: '🛡️ Safety tips', action: () => { setInput('Safety tips for walking alone at night'); } },
+    { label: '🆘 Send SOS', action: () => sendDirectMessage('Send SOS now') },
+    { label: '📞 Helplines', action: () => sendDirectMessage('Show emergency helplines') },
+    { label: '🛡️ Safety tips', action: () => sendDirectMessage('Safety tips for walking alone at night') },
   ];
 
   if (!session) return null;
@@ -273,38 +309,50 @@ export default function ChatWidget() {
             </div>
           )}
 
-          {/* Input Area */}
-          <div className="border-t border-slate-200 dark:border-slate-700 px-3 py-2 bg-white dark:bg-slate-900 sm:rounded-b-2xl">
+          {/* Input Area — safe-area padding for mobile keyboards */}
+          <div className="border-t border-slate-200 dark:border-slate-700 px-3 py-3 bg-white dark:bg-slate-900 sm:rounded-b-2xl" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
             <form onSubmit={sendMessage} className="flex items-center gap-2">
               <input
                 ref={inputRef}
                 type="text"
+                inputMode="text"
+                enterKeyHint="send"
+                autoComplete="off"
+                autoCorrect="off"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage(e);
+                  }
+                }}
                 placeholder="Type a message..."
-                className="flex-1 px-3 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm border-none outline-none focus:ring-2 focus:ring-[#6C47FF]/30 placeholder:text-slate-400"
+                className="flex-1 px-4 py-3 bg-slate-100 dark:bg-slate-800 rounded-xl text-base border-none outline-none focus:ring-2 focus:ring-[#6C47FF]/30 placeholder:text-slate-400"
+                style={{ fontSize: '16px' }}
                 disabled={isLoading}
               />
               <button
                 type="submit"
                 disabled={!input.trim() || isLoading}
-                className="w-9 h-9 rounded-xl bg-[#6C47FF] text-white flex items-center justify-center disabled:opacity-40 hover:bg-[#5a3ad9] transition-colors active:scale-95"
+                className="w-11 h-11 rounded-xl bg-[#6C47FF] text-white flex items-center justify-center disabled:opacity-40 hover:bg-[#5a3ad9] transition-colors active:scale-95 shrink-0"
               >
-                <span className="material-symbols-outlined text-lg">send</span>
+                <span className="material-symbols-outlined text-xl">send</span>
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* Floating Action Button */}
+      {/* Floating Action Button — positioned above bottom nav */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-24 right-5 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all active:scale-95 ${
+        className={`fixed z-[55] w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all active:scale-95 ${
           isOpen 
             ? 'bg-slate-600 scale-0 pointer-events-none' 
             : 'bg-[#6C47FF] hover:bg-[#5a3ad9] hover:shadow-[#6C47FF]/30 hover:shadow-2xl'
         }`}
+        style={{ bottom: '90px', right: '20px' }}
         aria-label="Open Safety Chat"
       >
         <span className="material-symbols-outlined text-white text-2xl">chat</span>

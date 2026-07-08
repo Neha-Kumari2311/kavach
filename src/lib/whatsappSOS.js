@@ -112,8 +112,11 @@ export function getSMSLink(phone, message) {
     cleaned = '+' + cleaned;
   }
   const encoded = encodeURIComponent(message);
-  // Use & for iOS and ? for Android — &body= works on both modern platforms
-  return `sms:${cleaned}?body=${encoded}`;
+  // Use ?& separator which works on both iOS and Android
+  // iOS uses &body=, Android uses ?body=, but sms:NUMBER?&body= works on both
+  const isIOS = typeof navigator !== 'undefined' && /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const separator = isIOS ? '&' : '?';
+  return `sms:${cleaned}${separator}body=${encoded}`;
 }
 
 /**
