@@ -44,8 +44,10 @@
 }
 
 html {
-  /* Scale up all text globally on mobile for better readability */
-  font-size: 18px;
+  /* Scale up all text globally on mobile for better readability
+     20px base = 25% larger than browser default (16px)
+     This makes text-xs=15px, text-sm=17.5px, text-base=20px */
+  font-size: 20px;
 }
 
 @media (min-width: 640px) {

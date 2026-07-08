@@ -82,31 +82,31 @@ function UserLayoutInner({ children }) {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 px-2 py-3 z-50">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 px-2 py-4 z-50">
         <div className="max-w-2xl mx-auto flex items-center justify-around">
-          <Link href="/user/dashboard" className={`flex flex-col items-center gap-1 py-1 px-1 transition-colors ${isActive('/user/dashboard') ? 'text-[#6C47FF]' : 'text-slate-400 hover:text-[#6C47FF]'}`}>
-            <span className={`material-symbols-outlined text-2xl ${isActive('/user/dashboard') ? 'fill-1' : ''}`}>home</span>
-            <span className={`text-xs ${isActive('/user/dashboard') ? 'font-bold' : 'font-medium'}`}>Home</span>
+          <Link href="/user/dashboard" className={`flex flex-col items-center gap-1.5 py-1 px-2 transition-colors ${isActive('/user/dashboard') ? 'text-[#6C47FF]' : 'text-slate-400 hover:text-[#6C47FF]'}`}>
+            <span className={`material-symbols-outlined ${isActive('/user/dashboard') ? 'fill-1' : ''}`} style={{ fontSize: '28px' }}>home</span>
+            <span className={`text-[13px] ${isActive('/user/dashboard') ? 'font-bold' : 'font-medium'}`}>Home</span>
           </Link>
-          <Link href="/user/dashcam" className={`flex flex-col items-center gap-1 py-1 px-1 transition-colors ${isActive('/user/dashcam') ? 'text-[#6C47FF]' : 'text-slate-400 hover:text-[#6C47FF]'}`}>
-            <span className={`material-symbols-outlined text-2xl ${isActive('/user/dashcam') ? 'fill-1' : ''}`}>videocam</span>
-            <span className={`text-xs ${isActive('/user/dashcam') ? 'font-bold' : 'font-medium'}`}>Dashcam</span>
+          <Link href="/user/dashcam" className={`flex flex-col items-center gap-1.5 py-1 px-2 transition-colors ${isActive('/user/dashcam') ? 'text-[#6C47FF]' : 'text-slate-400 hover:text-[#6C47FF]'}`}>
+            <span className={`material-symbols-outlined ${isActive('/user/dashcam') ? 'fill-1' : ''}`} style={{ fontSize: '28px' }}>videocam</span>
+            <span className={`text-[13px] ${isActive('/user/dashcam') ? 'font-bold' : 'font-medium'}`}>Dashcam</span>
           </Link>
-          <Link href="/user/predict" className={`flex flex-col items-center gap-1 py-1 px-1 transition-colors ${isActive('/user/predict') ? 'text-[#6C47FF]' : 'text-slate-400 hover:text-[#6C47FF]'}`}>
-            <span className={`material-symbols-outlined text-2xl ${isActive('/user/predict') ? 'fill-1' : ''}`}>insights</span>
-            <span className={`text-xs ${isActive('/user/predict') ? 'font-bold' : 'font-medium'}`}>AI Score</span>
+          <Link href="/user/predict" className={`flex flex-col items-center gap-1.5 py-1 px-2 transition-colors ${isActive('/user/predict') ? 'text-[#6C47FF]' : 'text-slate-400 hover:text-[#6C47FF]'}`}>
+            <span className={`material-symbols-outlined ${isActive('/user/predict') ? 'fill-1' : ''}`} style={{ fontSize: '28px' }}>insights</span>
+            <span className={`text-[13px] ${isActive('/user/predict') ? 'font-bold' : 'font-medium'}`}>AI Score</span>
           </Link>
-          <Link href="/user/contacts" className={`flex flex-col items-center gap-1 py-1 px-1 transition-colors ${isActive('/user/contacts') ? 'text-[#6C47FF]' : 'text-slate-400 hover:text-[#6C47FF]'}`}>
-            <span className={`material-symbols-outlined text-2xl ${isActive('/user/contacts') ? 'fill-1' : ''}`}>group</span>
-            <span className={`text-xs ${isActive('/user/contacts') ? 'font-bold' : 'font-medium'}`}>Contacts</span>
+          <Link href="/user/contacts" className={`flex flex-col items-center gap-1.5 py-1 px-2 transition-colors ${isActive('/user/contacts') ? 'text-[#6C47FF]' : 'text-slate-400 hover:text-[#6C47FF]'}`}>
+            <span className={`material-symbols-outlined ${isActive('/user/contacts') ? 'fill-1' : ''}`} style={{ fontSize: '28px' }}>group</span>
+            <span className={`text-[13px] ${isActive('/user/contacts') ? 'font-bold' : 'font-medium'}`}>Contacts</span>
           </Link>
-          <Link href="/user/helplines" className={`flex flex-col items-center gap-1 py-1 px-1 transition-colors ${isActive('/user/helplines') ? 'text-[#6C47FF]' : 'text-slate-400 hover:text-[#6C47FF]'}`}>
-            <span className={`material-symbols-outlined text-2xl ${isActive('/user/helplines') ? 'fill-1' : ''}`}>support_agent</span>
-            <span className={`text-xs ${isActive('/user/helplines') ? 'font-bold' : 'font-medium'}`}>Helplines</span>
+          <Link href="/user/helplines" className={`flex flex-col items-center gap-1.5 py-1 px-2 transition-colors ${isActive('/user/helplines') ? 'text-[#6C47FF]' : 'text-slate-400 hover:text-[#6C47FF]'}`}>
+            <span className={`material-symbols-outlined ${isActive('/user/helplines') ? 'fill-1' : ''}`} style={{ fontSize: '28px' }}>support_agent</span>
+            <span className={`text-[13px] ${isActive('/user/helplines') ? 'font-bold' : 'font-medium'}`}>Helplines</span>
           </Link>
-          <Link href="/user/store" className={`flex flex-col items-center gap-1 py-1 px-1 transition-colors ${isActive('/user/store') ? 'text-[#6C47FF]' : 'text-slate-400 hover:text-[#6C47FF]'}`}>
-            <span className={`material-symbols-outlined text-2xl ${isActive('/user/store') ? 'fill-1' : ''}`}>shopping_bag</span>
-            <span className={`text-xs ${isActive('/user/store') ? 'font-bold' : 'font-medium'}`}>Store</span>
+          <Link href="/user/store" className={`flex flex-col items-center gap-1.5 py-1 px-2 transition-colors ${isActive('/user/store') ? 'text-[#6C47FF]' : 'text-slate-400 hover:text-[#6C47FF]'}`}>
+            <span className={`material-symbols-outlined ${isActive('/user/store') ? 'fill-1' : ''}`} style={{ fontSize: '28px' }}>shopping_bag</span>
+            <span className={`text-[13px] ${isActive('/user/store') ? 'font-bold' : 'font-medium'}`}>Store</span>
           </Link>
         </div>
       </nav>
