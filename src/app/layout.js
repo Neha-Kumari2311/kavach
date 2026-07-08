@@ -17,9 +17,17 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
+        {/* Preload Material Symbols font to prevent FOIT (Flash of Unstyled Text) */}
+        <link
+          rel="preload"
+          href="https://fonts.gstatic.com/s/materialsymbolsoutlined/v241/kJEhBvYX7BgnkSrUwT8OhrdQw4oELdPIeeII9v6oFsI.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
         />
         <meta name="theme-color" content="#6C47FF" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
