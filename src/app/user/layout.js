@@ -26,10 +26,10 @@ function UserLayoutInner({ children }) {
               <span className="text-white text-xs font-bold">K</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-medium text-white/60">
+              <p className="text-xs font-medium text-white/60">
                 {new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 17 ? 'Good afternoon' : 'Good evening'},
               </p>
-              <h1 className="text-base font-extrabold text-white tracking-tight truncate">
+              <h1 className="text-lg font-extrabold text-white tracking-tight truncate">
                 {userName}
               </h1>
               {/* Safety Score Badge */}

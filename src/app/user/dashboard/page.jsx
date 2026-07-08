@@ -224,7 +224,7 @@ export default function UserDashboardPage() {
 
         {/* Quick Actions — 2x2 grid */}
         <section>
-          <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 mb-3 px-1">
+          <h3 className="font-bold text-base text-slate-900 dark:text-slate-100 mb-3 px-1">
             Quick Actions
           </h3>
           <div className="grid grid-cols-2 gap-3">
@@ -236,7 +236,7 @@ export default function UserDashboardPage() {
               <div className="w-12 h-12 rounded-xl bg-[#6C47FF]/10 flex items-center justify-center group-hover:bg-[#6C47FF]/20 transition-colors">
                 <span className="material-symbols-outlined text-[#6C47FF] text-2xl">phone_in_talk</span>
               </div>
-              <span className="text-xs font-bold">Fake Call</span>
+              <span className="text-sm font-bold">Fake Call</span>
             </button>
 
             {/* Fake Siren */}
@@ -250,7 +250,7 @@ export default function UserDashboardPage() {
               <div className="w-12 h-12 rounded-xl bg-[#6C47FF]/10 flex items-center justify-center group-hover:bg-[#6C47FF]/20 transition-colors">
                 <span className="material-symbols-outlined text-[#6C47FF] text-2xl">videocam</span>
               </div>
-              <span className="text-xs font-bold">Dashcam</span>
+              <span className="text-sm font-bold">Dashcam</span>
             </button>
 
             {/* AI Predict */}
@@ -261,7 +261,7 @@ export default function UserDashboardPage() {
               <div className="w-12 h-12 rounded-xl bg-[#6C47FF]/10 flex items-center justify-center group-hover:bg-[#6C47FF]/20 transition-colors">
                 <span className="material-symbols-outlined text-[#6C47FF] text-2xl">insights</span>
               </div>
-              <span className="text-xs font-bold">AI Predict</span>
+              <span className="text-sm font-bold">AI Predict</span>
             </button>
           </div>
         </section>

@@ -48,6 +48,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   min-height: 100dvh;
   background: var(--color-surface);
+  font-size: 16px; /* Prevent mobile browsers from shrinking text below 16px */
+  line-height: 1.5;
 }
 
 @media (prefers-color-scheme: dark) {

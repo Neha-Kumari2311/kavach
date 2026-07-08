@@ -11,12 +11,14 @@ const inter = Inter({
 export const metadata = {
   title: "Kavach - Personal Safety Platform",
   description: "AI-powered women safety platform with real-time protection, SOS alerts, and community-driven safety intelligence.",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         {/* Preload Material Symbols font to prevent FOIT (Flash of Unstyled Text) */}
         <link
           rel="preload"
