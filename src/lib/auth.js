@@ -11,7 +11,7 @@ import User from '@/models/User';
 export const authOptions = {
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 3 * 24 * 60 * 60, // 3 days
   },
   secret: process.env.NEXTAUTH_SECRET,
   providers: [
@@ -62,6 +62,7 @@ export const authOptions = {
             phone: user.phone || '',
             name: user.name,
             role: user.role,
+            companyId: user.companyId || null,
           };
         } catch (error) {
           console.error('Auth error:', error);
@@ -79,6 +80,7 @@ export const authOptions = {
         token.phone = user.phone;
         token.name = user.name;
         token.role = user.role;
+        token.companyId = user.companyId;
       }
       return token;
     },
@@ -90,6 +92,7 @@ export const authOptions = {
         session.user.phone = token.phone;
         session.user.name = token.name;
         session.user.role = token.role;
+        session.user.companyId = token.companyId;
       }
       return session;
     },

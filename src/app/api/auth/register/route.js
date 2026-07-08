@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { name, phone, email, password, accountType } = body;
+    const { name, phone, email, password, accountType, companyId } = body;
 
     // Map accountType to role
     let role = 'user';
@@ -87,6 +87,7 @@ export async function POST(request) {
       email: email ? email.toLowerCase().trim() : null,
       password,
       role,
+      companyId: (role === 'company' && companyId) ? companyId.trim() : null,
     });
 
     // Return user data (password is excluded by default)

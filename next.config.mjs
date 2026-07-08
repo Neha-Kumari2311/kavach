@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable standalone output for Docker/serverless deployment
-  output: 'standalone',
+  // Vercel deployment (no standalone needed — Vercel handles it automatically)
   images: {
     remotePatterns: [
       {
@@ -11,7 +10,7 @@ const nextConfig = {
       },
     ],
   },
-  // Suppress build-time errors from dynamic env vars (checked at runtime)
+  // External packages that shouldn't be bundled into serverless functions
   experimental: {
     serverComponentsExternalPackages: ['mongoose', 'bcryptjs'],
   },

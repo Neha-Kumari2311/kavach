@@ -1,521 +1,382 @@
 'use client';
 
-import { useState } from 'react';
-import {
-  MOCK_STATS,
-  MOCK_AI_STATUS,
-  MOCK_ALERTS,
-  MOCK_VEHICLES,
-  SEVERITY_OPTIONS,
-} from '@/lib/company-dashboard-mock';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSession, signOut } from 'next-auth/react';
 
-const STATUS_COLORS = {
-  red: {
-    bg: 'bg-red-100 dark:bg-red-900/20',
-    text: 'text-red-600 dark:text-red-400',
-    dot: 'bg-red-500',
-  },
-  amber: {
-    bg: 'bg-amber-100 dark:bg-amber-900/20',
-    text: 'text-amber-600 dark:text-amber-400',
-    dot: 'bg-amber-500',
-  },
-  emerald: {
-    bg: 'bg-emerald-100 dark:bg-emerald-900/20',
-    text: 'text-emerald-600 dark:text-emerald-400',
-    dot: 'bg-emerald-500',
-  },
-};
+export default function CompanyDashboard() {
+  const { data: session } = useSession();
+  const [incidents, setIncidents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
+  const [updatingId, setUpdatingId] = useState(null);
+  const prevActiveCountRef = useRef(0);
+  const audioRef = useRef(null);
+  const hasPermissionRef = useRef(false);
 
-function getStatusStyle(status) {
-  const key = status.toLowerCase();
-  if (key === 'critical' || key === 'verifying' || key === 'attention') {
-    return key === 'critical' ? 'red' : 'amber';
-  }
-  return 'emerald';
-}
+  const companyName = session?.user?.name || 'Company';
+  const myCompanyId = session?.user?.companyId || '';
 
-export default function CompanyDashboardPage() {
-  const [search, setSearch] = useState('');
-  const [severityFilter, setSeverityFilter] = useState('all');
-  const [activeNav, setActiveNav] = useState('overview');
+  // Request notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
 
-  const filteredAlerts = MOCK_ALERTS.filter((alert) => {
-    const matchesSearch =
-      !search.trim() ||
-      alert.vehicleId.toLowerCase().includes(search.toLowerCase()) ||
-      alert.alertType.toLowerCase().includes(search.toLowerCase());
-    const matchesSeverity =
-      severityFilter === 'all' ||
-      alert.status.toLowerCase() === severityFilter ||
-      (severityFilter === 'resolved' && alert.status === 'Resolved') ||
-      (severityFilter === 'critical' && alert.status === 'Critical') ||
-      (severityFilter === 'warning' &&
-        ['Verifying', 'Attention'].includes(alert.status));
-    return matchesSearch && matchesSeverity;
-  });
+  // Fetch incidents
+  const fetchIncidents = useCallback(async () => {
+    try {
+      const params = new URLSearchParams();
+      if (filter !== 'all') params.append('status', filter);
+      if (myCompanyId) params.append('companyId', myCompanyId);
 
-  const navItems = [
-    { id: 'overview', icon: 'dashboard', label: 'Overview' },
-    { id: 'vehicles', icon: 'local_taxi', label: 'Live Vehicles' },
-    { id: 'incidents', icon: 'emergency', label: 'Incidents' },
-    {
-      id: 'alerts',
-      icon: 'notifications',
-      label: 'Alerts',
-      badge: 3,
-    },
-    { id: 'analytics', icon: 'bar_chart', label: 'Analytics' },
-  ];
+      const res = await fetch(`/api/incidents?${params.toString()}`);
+      const data = await res.json();
+      if (res.ok) {
+        const newIncidents = data.incidents || [];
+        
+        // Check for new active incidents (SOS alert sound)
+        const newActiveCount = newIncidents.filter(i => i.status === 'active').length;
+        if (newActiveCount > prevActiveCountRef.current && prevActiveCountRef.current !== 0) {
+          // New SOS alert came in!
+          playAlertSound();
+          showNotification(newIncidents.find(i => i.status === 'active'));
+        }
+        prevActiveCountRef.current = newActiveCount;
+        
+        setIncidents(newIncidents);
+      }
+    } catch (err) {
+      console.error('Failed to fetch incidents:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [filter, myCompanyId]);
+
+  useEffect(() => {
+    fetchIncidents();
+    const interval = setInterval(fetchIncidents, 8000); // Poll every 8s
+    return () => clearInterval(interval);
+  }, [fetchIncidents]);
+
+  // Play alert sound
+  const playAlertSound = () => {
+    try {
+      if (!audioRef.current) {
+        audioRef.current = new Audio('/sounds/siren.wav');
+        audioRef.current.volume = 0.7;
+      }
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {}); // Ignore autoplay errors
+    } catch (e) {
+      console.log('Audio play failed:', e);
+    }
+  };
+
+  // Show browser notification
+  const showNotification = (incident) => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('🚨 KAVACH SOS Alert!', {
+        body: `Vehicle ${incident?.vehicleId || 'Unknown'} — ${incident?.gestureDetected || 'SOS'} detected. Passenger: ${incident?.userName || 'Unknown'}`,
+        icon: '/favicon.ico',
+        tag: 'kavach-sos',
+        requireInteraction: true,
+      });
+    }
+  };
+
+  // Update incident status
+  const updateStatus = async (incidentId, newStatus) => {
+    setUpdatingId(incidentId);
+    try {
+      const res = await fetch('/api/incidents', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ incidentId, status: newStatus }),
+      });
+      if (res.ok) {
+        setIncidents(prev => prev.map(inc =>
+          inc.id === incidentId
+            ? { ...inc, status: newStatus, resolvedAt: newStatus === 'resolved' ? new Date().toISOString() : inc.resolvedAt }
+            : inc
+        ));
+      }
+    } catch (err) {
+      console.error('Failed to update:', err);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const activeCount = incidents.filter(i => i.status === 'active').length;
+  const acknowledgedCount = incidents.filter(i => i.status === 'acknowledged').length;
+  const resolvedCount = incidents.filter(i => i.status === 'resolved').length;
+
+  // Fleet overview: unique vehicles
+  const uniqueVehicles = [...new Map(incidents.map(i => [i.vehicleId, i])).values()];
+
+  // Response time analytics
+  const getAvgResponseTime = () => {
+    const resolved = incidents.filter(i => i.resolvedAt && i.createdAt);
+    if (resolved.length === 0) return null;
+    const total = resolved.reduce((acc, i) => {
+      return acc + (new Date(i.resolvedAt) - new Date(i.createdAt));
+    }, 0);
+    const avgMs = total / resolved.length;
+    const mins = Math.round(avgMs / 60000);
+    return mins < 60 ? `${mins}m` : `${Math.round(mins / 60)}h ${mins % 60}m`;
+  };
+
+  const formatTime = (dateStr) => {
+    const date = new Date(dateStr);
+    return date.toLocaleString('en-IN', {
+      day: '2-digit', month: 'short',
+      hour: '2-digit', minute: '2-digit'
+    });
+  };
+
+  const timeAgo = (dateStr) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+  };
 
   return (
-    <div className="flex h-screen overflow-hidden font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100">
-      {/* Sidebar */}
-      <aside className="w-64 flex-shrink-0 border-r border-primary/10 bg-white dark:bg-background-dark/50 flex flex-col justify-between">
-        <div className="flex flex-col gap-8 p-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0f0a1a] font-display">
+      {/* Header */}
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-primary p-2 rounded-lg flex items-center justify-center">
-              <span className="material-symbols-outlined text-white">
-                shield_person
-              </span>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6C47FF] to-[#8B6AFF] flex items-center justify-center">
+              <span className="text-white text-sm font-bold">K</span>
             </div>
-            <div className="flex flex-col">
-              <h1 className="text-primary text-lg font-bold leading-none">
-                Kavach
-              </h1>
-              <p className="text-slate-500 dark:text-slate-400 text-xs font-medium">
-                Enterprise Safety
-              </p>
+            <div>
+              <h1 className="text-lg font-extrabold text-slate-900 dark:text-white">KAVACH Fleet Control</h1>
+              <p className="text-[10px] text-slate-500">{companyName} • Live Monitoring</p>
             </div>
           </div>
-          <nav className="flex flex-col gap-1">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveNav(item.id)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors w-full text-left ${
-                  activeNav === item.id
-                    ? 'bg-primary text-white'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary'
-                }`}
-              >
-                <span className="material-symbols-outlined">{item.icon}</span>
-                <span className="text-sm">{item.label}</span>
-                {item.badge ? (
-                  <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                    {item.badge}
-                  </span>
-                ) : null}
-              </button>
-            ))}
-          </nav>
-        </div>
-        <div className="p-6 flex flex-col gap-4 border-t border-primary/10">
-          <button className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-white text-sm font-bold shadow-lg shadow-primary/20 hover:brightness-110">
-            <span className="material-symbols-outlined text-sm">
-              support_agent
-            </span>
-            Dispatch Assistance
-          </button>
-          <div className="flex flex-col gap-1">
-            <button className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors w-full text-left">
-              <span className="material-symbols-outlined">settings</span>
-              <span className="text-sm">Settings</span>
-            </button>
-            <button className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors w-full text-left">
-              <span className="material-symbols-outlined">help</span>
-              <span className="text-sm">Support</span>
+          <div className="flex items-center gap-3">
+            {activeCount > 0 && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg animate-pulse">
+                <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                <span className="text-[10px] font-bold text-red-700 dark:text-red-400">{activeCount} Active SOS</span>
+              </div>
+            )}
+            {activeCount === 0 && (
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">All Clear</span>
+              </div>
+            )}
+            <button
+              onClick={() => signOut({ callbackUrl: '/' })}
+              className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+            >
+              Logout
             </button>
           </div>
         </div>
-      </aside>
+      </header>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-y-auto bg-background-light dark:bg-background-dark">
-        {/* Header */}
-        <header className="h-16 flex items-center justify-between px-8 bg-white dark:bg-background-dark/80 border-b border-primary/10 sticky top-0 z-10">
-          <div className="flex items-center gap-4">
-            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-              Fleet Safety Overview
-            </h2>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+            <p className="text-[10px] text-slate-500 font-medium uppercase">Total</p>
+            <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{incidents.length}</p>
           </div>
-          <div className="flex items-center gap-6">
-            <div className="relative w-64">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">
-                search
-              </span>
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search vehicle, driver or alert..."
-                className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg py-1.5 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary"
-              />
-            </div>
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-red-200 dark:border-red-800/50">
+            <p className="text-[10px] text-red-500 font-medium uppercase">Active SOS</p>
+            <p className="text-2xl font-black text-red-600 mt-1">{activeCount}</p>
+          </div>
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-amber-200 dark:border-amber-800/50">
+            <p className="text-[10px] text-amber-500 font-medium uppercase">Acknowledged</p>
+            <p className="text-2xl font-black text-amber-600 mt-1">{acknowledgedCount}</p>
+          </div>
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-emerald-200 dark:border-emerald-800/50">
+            <p className="text-[10px] text-emerald-500 font-medium uppercase">Resolved</p>
+            <p className="text-2xl font-black text-emerald-600 mt-1">{resolvedCount}</p>
+          </div>
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-[#6C47FF]/20">
+            <p className="text-[10px] text-[#6C47FF] font-medium uppercase">Avg Response</p>
+            <p className="text-2xl font-black text-[#6C47FF] mt-1">{getAvgResponseTime() || '—'}</p>
+          </div>
+        </div>
+
+        {/* Fleet Overview */}
+        <section className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <button className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors relative">
-                <span className="material-symbols-outlined">notifications</span>
-                <div className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-background-dark"></div>
-              </button>
-              <button className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                <span className="material-symbols-outlined">account_circle</span>
-              </button>
-              <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden border border-primary/20">
-                <span className="material-symbols-outlined text-primary text-xl">
-                  person
-                </span>
-              </div>
+              <span className="material-symbols-outlined text-[#6C47FF] text-lg">directions_car</span>
+              <h2 className="font-bold text-sm text-slate-900 dark:text-white">Fleet Overview</h2>
             </div>
+            <span className="text-[10px] text-slate-400">{uniqueVehicles.length} vehicle(s) tracked</span>
           </div>
-        </header>
-
-        {/* Dashboard Content */}
-        <div className="p-8 space-y-8 max-w-7xl mx-auto w-full">
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white dark:bg-background-dark/60 p-6 rounded-xl border border-primary/10 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                  Live Vehicles
-                </p>
-                <h3 className="text-3xl font-bold mt-1 text-slate-800 dark:text-slate-100 tracking-tight">
-                  {MOCK_STATS.liveVehicles.toLocaleString()}
-                </h3>
-                <p className="text-xs text-emerald-500 font-bold mt-2 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-xs">
-                    trending_up
-                  </span>
-                  {MOCK_STATS.liveVehiclesTrend} vs last hour
-                </p>
-              </div>
-              <div className="bg-primary/10 p-3 rounded-lg">
-                <span className="material-symbols-outlined text-primary text-3xl">
-                  local_shipping
-                </span>
-              </div>
-            </div>
-            <div className="bg-white dark:bg-background-dark/60 p-6 rounded-xl border border-primary/10 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                  Active Rides
-                </p>
-                <h3 className="text-3xl font-bold mt-1 text-slate-800 dark:text-slate-100 tracking-tight">
-                  {MOCK_STATS.activeRides}
-                </h3>
-                <p className="text-xs text-emerald-500 font-bold mt-2 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-xs">
-                    trending_up
-                  </span>
-                  {MOCK_STATS.activeRidesTrend} vs last hour
-                </p>
-              </div>
-              <div className="bg-blue-500/10 p-3 rounded-lg">
-                <span className="material-symbols-outlined text-blue-500 text-3xl">
-                  commute
-                </span>
-              </div>
-            </div>
-            <div className="bg-white dark:bg-background-dark/60 p-6 rounded-xl border border-primary/10 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                  AI Safety Score
-                </p>
-                <h3 className="text-3xl font-bold mt-1 text-slate-800 dark:text-slate-100 tracking-tight">
-                  {MOCK_STATS.aiSafetyScore}%
-                </h3>
-                <p className="text-xs text-emerald-500 font-bold mt-2 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-xs">
-                    check_circle
-                  </span>
-                  {MOCK_STATS.aiSafetyStatus}
-                </p>
-              </div>
-              <div className="bg-emerald-500/10 p-3 rounded-lg">
-                <span className="material-symbols-outlined text-emerald-500 text-3xl">
-                  psychology
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* AI Safety Engine Status */}
-          <section>
-            <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">
-              AI Safety Engine Status
-            </h3>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {MOCK_AI_STATUS.map((zone) => {
-                const zoneStyles = {
-                  emerald:
-                    'border-l-emerald-500 bg-white dark:bg-background-dark/60',
-                  amber: 'border-l-amber-500 bg-white dark:bg-background-dark/60',
-                  red: 'border-l-red-500 bg-white dark:bg-background-dark/60',
-                };
-                const iconStyles = {
-                  emerald:
-                    'p-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-lg',
-                  amber:
-                    'p-2 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-lg',
-                  red: 'p-2 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-lg',
-                };
-                return (
-                  <div
-                    key={zone.id}
-                    className={`p-5 rounded-xl border-l-4 shadow-sm flex items-start gap-4 ${zoneStyles[zone.color] || zoneStyles.emerald}`}
-                  >
-                    <div className={iconStyles[zone.color] || iconStyles.emerald}>
-                      <span className="material-symbols-outlined">
-                        {zone.icon}
-                      </span>
-                    </div>
+          {uniqueVehicles.length === 0 ? (
+            <div className="p-6 text-center text-xs text-slate-400">No vehicles with incidents yet</div>
+          ) : (
+            <div className="divide-y divide-slate-100 dark:divide-slate-700 max-h-48 overflow-y-auto">
+              {uniqueVehicles.slice(0, 8).map((v) => (
+                <div key={v.vehicleId} className="px-5 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2.5 h-2.5 rounded-full ${v.status === 'active' ? 'bg-red-500 animate-pulse' : v.status === 'acknowledged' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
                     <div>
-                      <h4 className="font-bold text-slate-800 dark:text-slate-100">
-                        {zone.title}
-                      </h4>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {zone.count} {zone.description}
-                      </p>
+                      <span className="text-sm font-bold text-slate-900 dark:text-white">{v.vehicleId}</span>
+                      <span className="text-[10px] text-slate-400 ml-2">{v.userName}</span>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* Vehicle List & Dashcam Status (compact) */}
-          <section>
-            <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">
-              Vehicle List & Dashcam Status
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {MOCK_VEHICLES.map((v) => (
-                <div
-                  key={v.id}
-                  className="bg-white dark:bg-background-dark/60 p-4 rounded-xl border border-primary/10 shadow-sm"
-                >
-                  <p className="text-sm font-bold text-primary truncate">
-                    {v.id}
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    {v.driver}
-                  </p>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span
-                      className={`w-2 h-2 rounded-full ${
-                        v.status === 'critical'
-                          ? 'bg-red-500'
-                          : v.status === 'warning'
-                          ? 'bg-amber-500'
-                          : 'bg-emerald-500'
-                      }`}
-                    />
-                    <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          v.dashcam === 'recording'
-                            ? 'bg-red-500 animate-pulse'
-                            : 'bg-slate-400'
-                        }`}
-                      />
-                      {v.dashcam}
-                    </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
+                      v.status === 'active' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                      v.status === 'acknowledged' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
+                      'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                    }`}>{v.status}</span>
+                    <span className="text-[10px] text-slate-400">{timeAgo(v.createdAt)}</span>
                   </div>
                 </div>
               ))}
             </div>
-          </section>
+          )}
+        </section>
 
-          {/* Main Layout: Alerts Table & Live Map */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
-            {/* Recent Incidents / AI Alerts Feed */}
-            <div className="xl:col-span-2 bg-white dark:bg-background-dark/60 rounded-xl border border-primary/10 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-primary/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                    Recent Safety Alerts
-                  </h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Live feed from AI monitoring system
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <select
-                    value={severityFilter}
-                    onChange={(e) => setSeverityFilter(e.target.value)}
-                    className="text-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-primary"
-                  >
-                    {SEVERITY_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                  <button className="text-sm text-primary font-semibold hover:underline">
-                    View All Alerts
-                  </button>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead className="bg-slate-50 dark:bg-slate-800/50">
-                    <tr className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
-                      <th className="px-6 py-4">Timestamp</th>
-                      <th className="px-6 py-4">Vehicle ID</th>
-                      <th className="px-6 py-4">Alert Type</th>
-                      <th className="px-6 py-4">Dashcam</th>
-                      <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-primary/5">
-                    {filteredAlerts.map((alert) => {
-                      const statusStyle =
-                        STATUS_COLORS[alert.alertTypeColor] ||
-                        STATUS_COLORS.amber;
-                      const statusBadge =
-                        STATUS_COLORS[getStatusStyle(alert.status)] ||
-                        STATUS_COLORS.amber;
-                      return (
-                        <tr
-                          key={alert.id}
-                          className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors"
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300 font-medium">
-                            {alert.timestamp}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-primary">
-                            {alert.vehicleId}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`w-2 h-2 rounded-full ${statusStyle.dot}`}
-                              />
-                              <span className="text-sm text-slate-700 dark:text-slate-200">
-                                {alert.alertType}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span
-                              className={`text-[10px] font-medium flex items-center gap-1 ${
-                                alert.dashcamStatus === 'recording'
-                                  ? 'text-red-600 dark:text-red-400'
-                                  : 'text-slate-500 dark:text-slate-400'
-                              }`}
-                            >
-                              <span
-                                className={`w-1.5 h-1.5 rounded-full ${
-                                  alert.dashcamStatus === 'recording'
-                                    ? 'bg-red-500 animate-pulse'
-                                    : 'bg-slate-400'
-                                }`}
-                              />
-                              {alert.dashcamStatus}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span
-                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${statusBadge.bg} ${statusBadge.text}`}
-                            >
-                              {alert.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <button
-                              className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors ${
-                                alert.actionPrimary
-                                  ? 'bg-primary text-white hover:brightness-110'
-                                  : 'border border-primary text-primary hover:bg-primary/5'
-                              }`}
-                            >
-                              {alert.action}
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              {filteredAlerts.length === 0 && (
-                <div className="p-8 text-center text-slate-500 dark:text-slate-400">
-                  No alerts match your filters.
-                </div>
-              )}
-            </div>
+        {/* Company ID */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+          <div>
+            <p className="text-[10px] text-slate-500 font-medium">Your Company ID (share with passengers)</p>
+            <p className="text-sm font-mono font-bold text-[#6C47FF] mt-1">{myCompanyId || 'Loading...'}</p>
+          </div>
+          <button
+            onClick={() => { navigator.clipboard.writeText(myCompanyId); }}
+            className="px-3 py-1.5 bg-[#6C47FF]/10 text-[#6C47FF] text-xs font-bold rounded-lg hover:bg-[#6C47FF]/20 transition-colors"
+          >
+            Copy
+          </button>
+        </div>
 
-            {/* Live Map Placeholder */}
-            <div className="bg-white dark:bg-background-dark/60 rounded-xl border border-primary/10 shadow-sm h-full overflow-hidden flex flex-col">
-              <div className="p-6 border-b border-primary/10">
-                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                  Live Deployment
-                </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Current active regions
-                </p>
-              </div>
-              <div className="flex-1 bg-slate-200 dark:bg-slate-800 relative min-h-[300px]">
-                <div className="absolute inset-0 opacity-40 mix-blend-overlay bg-gradient-to-br from-slate-300 to-slate-500 dark:from-slate-700 dark:to-slate-900"></div>
-                <div className="absolute top-1/4 left-1/3">
-                  <div className="relative">
-                    <div className="absolute -inset-2 bg-primary/40 rounded-full animate-ping"></div>
-                    <div className="relative bg-primary w-4 h-4 rounded-full border-2 border-white"></div>
-                  </div>
-                </div>
-                <div className="absolute bottom-1/3 right-1/4">
-                  <div className="bg-red-500 w-4 h-4 rounded-full border-2 border-white shadow-lg"></div>
-                </div>
-                <div className="absolute top-1/2 right-1/2">
-                  <div className="bg-primary w-3 h-3 rounded-full border-2 border-white opacity-60"></div>
-                </div>
-                <div className="absolute bottom-4 left-4 right-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm p-3 rounded-lg border border-primary/20 shadow-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded bg-primary/20 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-primary">
-                        map
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase">
-                        Active Region: Tech Corridor
-                      </p>
-                      <p className="text-[10px] text-slate-500">
-                        412 active rides in this sector
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          {['all', 'active', 'acknowledged', 'resolved'].map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-4 py-2 rounded-lg text-xs font-bold capitalize whitespace-nowrap transition-all ${
+                filter === f
+                  ? 'bg-[#6C47FF] text-white shadow-lg shadow-[#6C47FF]/20'
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-[#6C47FF]/30'
+              }`}
+            >
+              {f === 'all' ? `All (${incidents.length})` : `${f} (${incidents.filter(i => i.status === f).length})`}
+            </button>
+          ))}
+        </div>
+
+        {/* Incidents List */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+            <h2 className="font-bold text-slate-900 dark:text-white">Incident Reports</h2>
+            <span className="text-[10px] text-slate-400">Auto-refreshes every 8s</span>
           </div>
 
-          {/* Footer Action Area */}
-          <div className="bg-primary/5 rounded-xl p-8 border border-primary/20 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-6">
-              <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center text-primary">
-                <span className="material-symbols-outlined text-4xl">
-                  security
-                </span>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                  Kavach AI Monitoring Active
-                </h3>
-                <p className="text-slate-500 dark:text-slate-400">
-                  System is scanning 4,200 data points per second. AI Health:
-                  99.8% uptime.
-                </p>
-              </div>
+          {loading ? (
+            <div className="p-12 text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#6C47FF]"></div>
+              <p className="mt-3 text-sm text-slate-500">Loading incidents...</p>
             </div>
-            <div className="flex gap-4">
-              <button className="bg-white dark:bg-slate-800 border border-primary/20 text-primary px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-primary/5 transition-colors">
-                Download Report
-              </button>
-              <button className="bg-primary text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:brightness-110 shadow-lg shadow-primary/25 transition-all">
-                System Configuration
-              </button>
+          ) : incidents.length === 0 ? (
+            <div className="p-12 text-center">
+              <span className="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-600">verified_user</span>
+              <p className="mt-3 text-sm text-slate-500">No incidents reported. All vehicles safe.</p>
             </div>
+          ) : (
+            <div className="divide-y divide-slate-100 dark:divide-slate-700">
+              {incidents.map((incident) => (
+                <div key={incident.id} className={`px-5 py-4 transition-colors ${incident.status === 'active' ? 'bg-red-50/50 dark:bg-red-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-700/30'}`}>
+                  <div className="flex items-start gap-3">
+                    {/* Status dot */}
+                    <div className={`w-3 h-3 rounded-full flex-shrink-0 mt-1.5 ${
+                      incident.status === 'active' ? 'bg-red-500 animate-pulse' :
+                      incident.status === 'acknowledged' ? 'bg-amber-500' :
+                      'bg-emerald-500'
+                    }`}></div>
+
+                    {/* Main info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-sm text-slate-900 dark:text-white">Vehicle: {incident.vehicleId}</span>
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
+                          incident.status === 'active' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                          incident.status === 'acknowledged' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
+                          'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                        }`}>{incident.status}</span>
+                        <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded text-[9px] font-bold">
+                          {incident.gestureDetected}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Passenger: {incident.userName} • {formatTime(incident.createdAt)}
+                      </p>
+                      {incident.location?.latitude !== 0 && (
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          📍 {incident.locationName || `${incident.location.latitude.toFixed(4)}, ${incident.location.longitude.toFixed(4)}`}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {incident.location?.latitude !== 0 && (
+                        <a
+                          href={`https://maps.google.com/?q=${incident.location.latitude},${incident.location.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg hover:bg-[#6C47FF]/10 transition-colors"
+                          title="View on Map"
+                        >
+                          <span className="material-symbols-outlined text-sm text-[#6C47FF]">location_on</span>
+                        </a>
+                      )}
+                      
+                      {incident.status === 'active' && (
+                        <button
+                          onClick={() => updateStatus(incident.id, 'acknowledged')}
+                          disabled={updatingId === incident.id}
+                          className="px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold rounded-lg hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors disabled:opacity-50"
+                        >
+                          {updatingId === incident.id ? '...' : 'Acknowledge'}
+                        </button>
+                      )}
+                      
+                      {(incident.status === 'active' || incident.status === 'acknowledged') && (
+                        <button
+                          onClick={() => updateStatus(incident.id, 'resolved')}
+                          disabled={updatingId === incident.id}
+                          className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors disabled:opacity-50"
+                        >
+                          {updatingId === incident.id ? '...' : 'Resolve'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Info Banner */}
+        <div className="bg-[#6C47FF]/5 dark:bg-[#6C47FF]/10 border border-[#6C47FF]/20 rounded-xl p-4 flex items-start gap-3">
+          <span className="material-symbols-outlined text-[#6C47FF] mt-0.5">info</span>
+          <div>
+            <p className="text-xs font-bold text-[#6C47FF]">How it works</p>
+            <p className="text-[10px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+              When a passenger shows the SOS hand gesture to the KAVACH dashcam, an alert appears here with their vehicle, location, and timestamp. 
+              You will hear an alert sound and receive a browser notification for new incidents. 
+              Use Acknowledge to confirm you have seen it, and Resolve once the situation is handled.
+            </p>
           </div>
         </div>
       </main>

@@ -1,155 +1,171 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSession, signOut } from 'next-auth/react';
 import Badge from '@/components/ui/Badge';
 import StatCard from '@/components/ui/StatCard';
 import DataTableShell from '@/components/ui/DataTableShell';
-import {
-  PLATFORM_STATS,
-  MOCK_USERS,
-  MOCK_COMPANIES,
-  MOCK_SOS_EVENTS,
-  MOCK_AI_ALERTS,
-} from '@/lib/admin-dashboard-mock';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: 'dashboard' },
   { id: 'users', label: 'Users', icon: 'group' },
-  { id: 'companies', label: 'Companies', icon: 'domain' },
   { id: 'sos', label: 'SOS Events', icon: 'sos' },
-  { id: 'ai', label: 'AI Alerts', icon: 'psychology' },
+  { id: 'incidents', label: 'Incidents', icon: 'warning' },
 ];
 
 export default function AdminDashboardPage() {
+  const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState('overview');
   const [query, setQuery] = useState('');
-  const [companies, setCompanies] = useState(MOCK_COMPANIES);
-  const [companyFilter, setCompanyFilter] = useState('all'); // all | pending | approved | rejected
-  const [aiSeverity, setAiSeverity] = useState('all'); // all | critical | warning | info
 
-  const filteredUsers = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return MOCK_USERS;
-    return MOCK_USERS.filter(
-      (u) =>
-        u.name.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        u.role.toLowerCase().includes(q)
-    );
-  }, [query]);
+  // Real data state
+  const [stats, setStats] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [sosEvents, setSosEvents] = useState([]);
+  const [incidents, setIncidents] = useState([]);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [loadingSos, setLoadingSos] = useState(false);
+  const [loadingIncidents, setLoadingIncidents] = useState(false);
 
-  const filteredCompanies = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return companies.filter((c) => {
-      const matchesQuery =
-        !q ||
-        c.name.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q) ||
-        String(c.fleetSize).includes(q);
-      const matchesFilter =
-        companyFilter === 'all' ? true : c.status === companyFilter;
-      return matchesQuery && matchesFilter;
+  // Fetch platform stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('/api/admin/stats');
+        if (res.ok) {
+          const data = await res.json();
+          setStats(data);
+        }
+      } catch (e) {
+        console.error('Failed to fetch stats:', e);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  // Fetch users when tab is active
+  useEffect(() => {
+    if (activeTab !== 'users') return;
+    const fetchUsers = async () => {
+      setLoadingUsers(true);
+      try {
+        const params = new URLSearchParams();
+        if (query) params.append('search', query);
+        const res = await fetch(`/api/admin/users?${params}`);
+        if (res.ok) {
+          const data = await res.json();
+          setUsers(data.users || []);
+        }
+      } catch (e) {
+        console.error('Failed to fetch users:', e);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+    fetchUsers();
+  }, [activeTab, query]);
+
+  // Fetch SOS events when tab is active
+  // Admin sees the same incidents that companies/officials receive (dashcam-triggered SOS)
+  useEffect(() => {
+    if (activeTab !== 'sos') return;
+    const fetchSos = async () => {
+      setLoadingSos(true);
+      try {
+        const res = await fetch('/api/incidents');
+        if (res.ok) {
+          const data = await res.json();
+          setSosEvents(data.incidents || []);
+        }
+      } catch (e) {
+        console.error('Failed to fetch SOS:', e);
+      } finally {
+        setLoadingSos(false);
+      }
+    };
+    fetchSos();
+  }, [activeTab]);
+
+  // Fetch incidents when tab is active
+  useEffect(() => {
+    if (activeTab !== 'incidents') return;
+    const fetchIncidents = async () => {
+      setLoadingIncidents(true);
+      try {
+        const res = await fetch('/api/incidents');
+        if (res.ok) {
+          const data = await res.json();
+          setIncidents(data.incidents || []);
+        }
+      } catch (e) {
+        console.error('Failed to fetch incidents:', e);
+      } finally {
+        setLoadingIncidents(false);
+      }
+    };
+    fetchIncidents();
+  }, [activeTab]);
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleString('en-IN', {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
     });
-  }, [companies, query, companyFilter]);
-
-  const filteredSos = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return MOCK_SOS_EVENTS;
-    return MOCK_SOS_EVENTS.filter(
-      (e) =>
-        e.userName.toLowerCase().includes(q) ||
-        e.userId.toLowerCase().includes(q) ||
-        e.location.toLowerCase().includes(q) ||
-        e.status.toLowerCase().includes(q)
-    );
-  }, [query]);
-
-  const filteredAi = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return MOCK_AI_ALERTS.filter((a) => {
-      const matchesQuery =
-        !q ||
-        a.entity.toLowerCase().includes(q) ||
-        a.type.toLowerCase().includes(q) ||
-        a.source.toLowerCase().includes(q) ||
-        a.status.toLowerCase().includes(q);
-      const matchesSeverity = aiSeverity === 'all' ? true : a.severity === aiSeverity;
-      return matchesQuery && matchesSeverity;
-    });
-  }, [query, aiSeverity]);
-
-  const handleApprove = (companyId) => {
-    setCompanies((prev) =>
-      prev.map((c) => (c.id === companyId ? { ...c, status: 'approved' } : c))
-    );
-  };
-
-  const handleReject = (companyId) => {
-    setCompanies((prev) =>
-      prev.map((c) => (c.id === companyId ? { ...c, status: 'rejected' } : c))
-    );
   };
 
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0f0a1a] text-slate-900 dark:text-slate-100 font-display">
       {/* Top bar */}
-      <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-950/70 backdrop-blur-md border-b border-primary/10">
+      <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="bg-primary p-2 rounded-lg flex items-center justify-center">
-              <span className="material-symbols-outlined text-white">
-                admin_panel_settings
-              </span>
+            <div className="bg-[#6C47FF] p-2 rounded-lg flex items-center justify-center">
+              <span className="material-symbols-outlined text-white">admin_panel_settings</span>
             </div>
             <div>
               <h1 className="text-lg font-bold leading-none">Kavach Admin</h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                Platform control center
-              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Platform Control Center</p>
             </div>
           </div>
 
           <div className="hidden md:flex items-center gap-3 flex-1 justify-center max-w-xl">
             <div className="relative w-full">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">
-                search
-              </span>
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search users, companies, SOS, alerts..."
-                className="w-full bg-slate-100 dark:bg-slate-900 border-none rounded-lg py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary"
+                placeholder="Search users by name, email, phone..."
+                className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-[#6C47FF]"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors relative">
-              <span className="material-symbols-outlined">notifications</span>
-              <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-950" />
-            </button>
-            <button className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors">
-              <span className="material-symbols-outlined">settings</span>
-            </button>
-          </div>
+          <button
+            onClick={() => signOut({ callbackUrl: '/' })}
+            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+          >
+            Logout
+          </button>
         </div>
 
         {/* Tabs */}
         <div className="max-w-7xl mx-auto px-6 pb-3">
-          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+          <div className="flex gap-2 overflow-x-auto">
             {TABS.map((t) => (
               <button
                 key={t.id}
                 onClick={() => setActiveTab(t.id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${
                   activeTab === t.id
-                    ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-800 hover:bg-primary/5'
+                    ? 'bg-[#6C47FF] text-white shadow-lg shadow-[#6C47FF]/20'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-[#6C47FF]/5'
                 }`}
               >
-                <span className="material-symbols-outlined text-[18px]">
-                  {t.icon}
-                </span>
+                <span className="material-symbols-outlined text-[18px]">{t.icon}</span>
                 {t.label}
               </button>
             ))}
@@ -158,302 +174,178 @@ export default function AdminDashboardPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        {/* Mobile search */}
-        <div className="md:hidden">
-          <div className="relative">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">
-              search
-            </span>
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search..."
-              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary"
-            />
-          </div>
-        </div>
-
-        {/* Overview */}
-        {activeTab === 'overview' ? (
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
           <>
-            <div className="flex items-end justify-between gap-4 flex-wrap">
-              <div>
-                <h2 className="text-2xl font-black tracking-tight">
-                  Platform Overview
-                </h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  High-level stats and system activity (mock data).
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <button className="px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                  Download Snapshot
-                </button>
-                <button className="px-4 py-2 rounded-lg bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors">
-                  System Settings
-                </button>
-              </div>
+            <div>
+              <h2 className="text-2xl font-black tracking-tight">Platform Overview</h2>
+              <p className="text-sm text-slate-500 mt-1">Real-time stats from your MongoDB database.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <StatCard
-                label="Total Users"
-                value={PLATFORM_STATS.totalUsers.toLocaleString()}
-                sub="All registered user accounts"
-                icon="group"
-                iconBg="bg-primary/10 text-primary"
-              />
-              <StatCard
-                label="Companies"
-                value={PLATFORM_STATS.totalCompanies.toLocaleString()}
-                sub={`${PLATFORM_STATS.pendingCompanies} pending approvals`}
-                icon="domain"
-                iconBg="bg-blue-500/10 text-blue-500"
-              />
-              <StatCard
-                label="SOS Events (Today)"
-                value={PLATFORM_STATS.sosEventsToday}
-                sub={`${PLATFORM_STATS.aiAlertsToday} AI alerts today`}
-                icon="sos"
-                iconBg="bg-red-500/10 text-red-500"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="bg-white dark:bg-slate-900/70 rounded-xl border border-primary/10 p-6 shadow-sm">
-                <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-                  System Health
-                </h3>
-                <div className="mt-5 flex items-center justify-between">
-                  <div>
-                    <p className="text-3xl font-black text-slate-900 dark:text-slate-100">
-                      {PLATFORM_STATS.uptime}
-                    </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                      Uptime (30 days)
-                    </p>
+            {loadingStats ? (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 animate-pulse">
+                    <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-20 mb-3"></div>
+                    <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-12"></div>
                   </div>
-                  <div className="size-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                    <span className="material-symbols-outlined">check_circle</span>
-                  </div>
-                </div>
-                <div className="mt-6">
-                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                    <span>API latency</span>
-                    <span className="font-bold text-slate-700 dark:text-slate-200">
-                      142ms
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mt-2">
-                    <span>DB connections</span>
-                    <span className="font-bold text-slate-700 dark:text-slate-200">
-                      Stable
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white dark:bg-slate-900/70 rounded-xl border border-primary/10 p-6 shadow-sm lg:col-span-2">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-                      Admin Actions
-                    </h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                      Common operational flows
-                    </p>
-                  </div>
-                  <Badge tone="purple">UI only</Badge>
-                </div>
-                <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <button
-                    onClick={() => setActiveTab('companies')}
-                    className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 hover:bg-primary/5 transition-colors text-left"
-                  >
-                    <div className="size-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                      <span className="material-symbols-outlined">fact_check</span>
-                    </div>
-                    <p className="mt-3 font-bold">Review companies</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Approve or reject onboarding requests.
-                    </p>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('sos')}
-                    className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 hover:bg-primary/5 transition-colors text-left"
-                  >
-                    <div className="size-10 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center">
-                      <span className="material-symbols-outlined">sos</span>
-                    </div>
-                    <p className="mt-3 font-bold">Monitor SOS</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Triage active incidents in real time.
-                    </p>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('ai')}
-                    className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 hover:bg-primary/5 transition-colors text-left"
-                  >
-                    <div className="size-10 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center">
-                      <span className="material-symbols-outlined">psychology</span>
-                    </div>
-                    <p className="mt-3 font-bold">AI alerts</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Review model flags and escalations.
-                    </p>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </>
-        ) : null}
-
-        {/* Users */}
-        {activeTab === 'users' ? (
-          <DataTableShell
-            title="All Users"
-            subtitle="View all platform users (mock data)."
-            headerRight={<Badge tone="slate">{filteredUsers.length} records</Badge>}
-          >
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-slate-50 dark:bg-slate-900">
-                  <tr className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
-                    <th className="px-6 py-4">Name</th>
-                    <th className="px-6 py-4">Email</th>
-                    <th className="px-6 py-4">Role</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4">Created</th>
-                    <th className="px-6 py-4">Last login</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-primary/5">
-                  {filteredUsers.map((u) => (
-                    <tr
-                      key={u.id}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap font-bold">
-                        {u.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
-                        {u.email}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge tone="purple">{u.role}</Badge>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge tone={u.status === 'active' ? 'green' : 'amber'}>
-                          {u.status}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
-                        {u.createdAt}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
-                        {u.lastLogin}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </DataTableShell>
-        ) : null}
-
-        {/* Companies */}
-        {activeTab === 'companies' ? (
-          <section className="space-y-4">
-            <div className="flex items-end justify-between gap-4 flex-wrap">
-              <div>
-                <h3 className="text-lg font-bold">Companies</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Approve or reject company onboarding (client-side only).
-                </p>
-              </div>
-              <div className="flex gap-2 items-center flex-wrap">
-                {['all', 'pending', 'approved', 'rejected'].map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setCompanyFilter(f)}
-                    className={`px-4 py-2 rounded-full text-sm font-semibold border transition-colors ${
-                      companyFilter === f
-                        ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary/5'
-                    }`}
-                  >
-                    {f}
-                  </button>
                 ))}
               </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900/70 rounded-xl border border-primary/10 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-primary/10 flex items-center justify-between">
-                <Badge tone="slate">{filteredCompanies.length} records</Badge>
-                <Badge tone="purple">mock</Badge>
+            ) : stats ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <StatCard label="Total Users" value={stats.totalUsers} sub="Registered individuals" icon="group" iconBg="bg-[#6C47FF]/10 text-[#6C47FF]" />
+                <StatCard label="Companies" value={stats.totalCompanies} sub="Fleet operators" icon="domain" iconBg="bg-blue-500/10 text-blue-500" />
+                <StatCard label="SOS Events" value={stats.totalSOS} sub={`${stats.sosToday} today`} icon="sos" iconBg="bg-red-500/10 text-red-500" />
+                <StatCard label="Incidents" value={stats.totalIncidents} sub={`${stats.activeIncidents} active`} icon="warning" iconBg="bg-amber-500/10 text-amber-500" />
               </div>
+            ) : (
+              <p className="text-sm text-slate-500">Failed to load stats.</p>
+            )}
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <button
+                onClick={() => setActiveTab('users')}
+                className="p-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-[#6C47FF]/30 transition-colors text-left"
+              >
+                <div className="w-10 h-10 rounded-lg bg-[#6C47FF]/10 text-[#6C47FF] flex items-center justify-center">
+                  <span className="material-symbols-outlined">group</span>
+                </div>
+                <p className="mt-3 font-bold">Manage Users</p>
+                <p className="text-xs text-slate-500 mt-1">View all registered users and their roles.</p>
+              </button>
+              <button
+                onClick={() => setActiveTab('sos')}
+                className="p-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-red-300 transition-colors text-left"
+              >
+                <div className="w-10 h-10 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center">
+                  <span className="material-symbols-outlined">sos</span>
+                </div>
+                <p className="mt-3 font-bold">SOS Events</p>
+                <p className="text-xs text-slate-500 mt-1">Monitor all SOS alerts triggered by users.</p>
+              </button>
+              <button
+                onClick={() => setActiveTab('incidents')}
+                className="p-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-amber-300 transition-colors text-left"
+              >
+                <div className="w-10 h-10 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center">
+                  <span className="material-symbols-outlined">warning</span>
+                </div>
+                <p className="mt-3 font-bold">Fleet Incidents</p>
+                <p className="text-xs text-slate-500 mt-1">All dashcam-triggered incidents across companies.</p>
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* Users Tab */}
+        {activeTab === 'users' && (
+          <DataTableShell
+            title="All Users"
+            subtitle="Real user data from MongoDB."
+            headerRight={<Badge tone="slate">{users.length} records</Badge>}
+          >
+            {loadingUsers ? (
+              <div className="p-8 text-center">
+                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-[#6C47FF]"></div>
+                <p className="mt-2 text-sm text-slate-500">Loading users...</p>
+              </div>
+            ) : users.length === 0 ? (
+              <div className="p-8 text-center text-sm text-slate-500">No users found.</div>
+            ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead className="bg-slate-50 dark:bg-slate-900">
                     <tr className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
-                      <th className="px-6 py-4">Company</th>
+                      <th className="px-6 py-4">Name</th>
                       <th className="px-6 py-4">Email</th>
-                      <th className="px-6 py-4">Fleet size</th>
+                      <th className="px-6 py-4">Phone</th>
+                      <th className="px-6 py-4">Role</th>
+                      <th className="px-6 py-4">Joined</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {users.map((u) => (
+                      <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td className="px-6 py-4 font-bold text-sm">{u.name}</td>
+                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{u.email}</td>
+                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{u.phone || '—'}</td>
+                        <td className="px-6 py-4">
+                          <Badge tone={u.role === 'admin' ? 'purple' : u.role === 'company' ? 'blue' : 'green'}>{u.role}</Badge>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-500">{formatDate(u.createdAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </DataTableShell>
+        )}
+
+        {/* SOS Events Tab — shows dashcam-triggered incidents (same as what officials/companies receive) */}
+        {activeTab === 'sos' && (
+          <DataTableShell
+            title="SOS Events"
+            subtitle="Dashcam-triggered SOS alerts reported to officials."
+            headerRight={<Badge tone="slate">{sosEvents.length} events</Badge>}
+          >
+            {loadingSos ? (
+              <div className="p-8 text-center">
+                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-[#6C47FF]"></div>
+                <p className="mt-2 text-sm text-slate-500">Loading SOS events...</p>
+              </div>
+            ) : sosEvents.length === 0 ? (
+              <div className="p-8 text-center">
+                <span className="material-symbols-outlined text-4xl text-slate-300">verified_user</span>
+                <p className="mt-2 text-sm text-slate-500">No SOS events recorded yet.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-50 dark:bg-slate-900">
+                    <tr className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
+                      <th className="px-6 py-4">Time</th>
+                      <th className="px-6 py-4">Passenger</th>
+                      <th className="px-6 py-4">Vehicle</th>
+                      <th className="px-6 py-4">Gesture</th>
                       <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4">Created</th>
                       <th className="px-6 py-4">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-primary/5">
-                    {filteredCompanies.map((c) => (
-                      <tr
-                        key={c.id}
-                        className="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors"
-                      >
-                        <td className="px-6 py-4 font-bold">{c.name}</td>
-                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
-                          {c.email}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
-                          {c.fleetSize.toLocaleString()}
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {sosEvents.map((e, i) => (
+                      <tr key={e.id || e._id || i} className={`transition-colors ${e.status === 'active' ? 'bg-red-50/30 dark:bg-red-900/5' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
+                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{formatDate(e.createdAt)}</td>
+                        <td className="px-6 py-4 font-bold text-sm">{e.userName || 'Unknown'}</td>
+                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{e.vehicleId || '—'}</td>
+                        <td className="px-6 py-4"><Badge tone="purple">{e.gestureDetected || 'SOS'}</Badge></td>
+                        <td className="px-6 py-4">
+                          <Badge tone={e.status === 'active' ? 'red' : e.status === 'acknowledged' ? 'amber' : 'green'}>{e.status}</Badge>
                         </td>
                         <td className="px-6 py-4">
-                          <Badge
-                            tone={
-                              c.status === 'approved'
-                                ? 'green'
-                                : c.status === 'rejected'
-                                ? 'red'
-                                : 'amber'
-                            }
-                          >
-                            {c.status}
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
-                          {c.createdAt}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {c.status === 'pending' ? (
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleApprove(c.id)}
-                                className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:brightness-110"
-                              >
-                                Approve
-                              </button>
-                              <button
-                                onClick={() => handleReject(c.id)}
-                                className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold hover:brightness-110"
-                              >
-                                Reject
-                              </button>
-                            </div>
-                          ) : (
-                            <button className="px-3 py-1.5 rounded-lg border border-primary text-primary text-xs font-bold hover:bg-primary/5">
-                              View
+                          {e.status === 'active' ? (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const res = await fetch('/api/incidents', {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ incidentId: e.id, status: 'resolved' }),
+                                  });
+                                  if (res.ok) {
+                                    setSosEvents(prev => prev.map(ev => ev.id === e.id ? { ...ev, status: 'resolved' } : ev));
+                                  }
+                                } catch (err) {
+                                  console.error('Failed to resolve SOS:', err);
+                                }
+                              }}
+                              className="px-3 py-1.5 text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors"
+                            >
+                              ✓ Resolve
                             </button>
+                          ) : (
+                            <span className="text-xs text-slate-400">{e.status === 'acknowledged' ? 'Acknowledged' : 'Resolved'}</span>
                           )}
                         </td>
                       </tr>
@@ -461,165 +353,66 @@ export default function AdminDashboardPage() {
                   </tbody>
                 </table>
               </div>
-            </div>
-          </section>
-        ) : null}
-
-        {/* SOS Events */}
-        {activeTab === 'sos' ? (
-          <DataTableShell
-            title="SOS Events"
-            subtitle="View all SOS events (mock data)."
-            headerRight={<Badge tone="slate">{filteredSos.length} records</Badge>}
-          >
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-slate-50 dark:bg-slate-900">
-                  <tr className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
-                    <th className="px-6 py-4">Time</th>
-                    <th className="px-6 py-4">User</th>
-                    <th className="px-6 py-4">Location</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-primary/5">
-                  {filteredSos.map((e) => (
-                    <tr
-                      key={e.id}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors"
-                    >
-                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                        {e.timestamp}
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="font-bold">{e.userName}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {e.userId}
-                        </p>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                        {e.location}
-                      </td>
-                      <td className="px-6 py-4">
-                        <Badge tone={e.status === 'active' ? 'red' : 'green'}>
-                          {e.status}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <button className="px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary/90">
-                          Open
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            )}
           </DataTableShell>
-        ) : null}
+        )}
 
-        {/* AI Alerts */}
-        {activeTab === 'ai' ? (
-          <section className="space-y-4">
-            <div className="flex items-end justify-between gap-4 flex-wrap">
-              <div>
-                <h3 className="text-lg font-bold">AI Alerts</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  View AI safety alerts across the platform (mock data).
-                </p>
+        {/* Incidents Tab */}
+        {activeTab === 'incidents' && (
+          <DataTableShell
+            title="Fleet Incidents"
+            subtitle="Dashcam-triggered incidents across all companies."
+            headerRight={<Badge tone="slate">{incidents.length} incidents</Badge>}
+          >
+            {loadingIncidents ? (
+              <div className="p-8 text-center">
+                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-[#6C47FF]"></div>
+                <p className="mt-2 text-sm text-slate-500">Loading incidents...</p>
               </div>
-              <div className="flex gap-2 items-center flex-wrap">
-                {['all', 'critical', 'warning', 'info'].map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setAiSeverity(s)}
-                    className={`px-4 py-2 rounded-full text-sm font-semibold border transition-colors ${
-                      aiSeverity === s
-                        ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary/5'
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
+            ) : incidents.length === 0 ? (
+              <div className="p-8 text-center">
+                <span className="material-symbols-outlined text-4xl text-slate-300">verified_user</span>
+                <p className="mt-2 text-sm text-slate-500">No incidents reported.</p>
               </div>
-            </div>
-
-            <DataTableShell
-              headerRight={
-                <>
-                  <Badge tone="slate">{filteredAi.length} records</Badge>
-                  <Badge tone="purple">mock</Badge>
-                </>
-              }
-            >
+            ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead className="bg-slate-50 dark:bg-slate-900">
                     <tr className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
                       <th className="px-6 py-4">Time</th>
-                      <th className="px-6 py-4">Source</th>
-                      <th className="px-6 py-4">Entity</th>
-                      <th className="px-6 py-4">Type</th>
-                      <th className="px-6 py-4">Severity</th>
+                      <th className="px-6 py-4">Vehicle</th>
+                      <th className="px-6 py-4">Passenger</th>
+                      <th className="px-6 py-4">Gesture</th>
                       <th className="px-6 py-4">Status</th>
+                      <th className="px-6 py-4">Location</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-primary/5">
-                    {filteredAi.map((a) => (
-                      <tr
-                        key={a.id}
-                        className="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors"
-                      >
-                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                          {a.timestamp}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                          {a.source}
-                        </td>
-                        <td className="px-6 py-4 font-bold text-primary whitespace-nowrap">
-                          {a.entity}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-200">
-                          {a.type}
-                        </td>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {incidents.map((inc) => (
+                      <tr key={inc.id} className={`transition-colors ${inc.status === 'active' ? 'bg-red-50/50 dark:bg-red-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
+                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{formatDate(inc.createdAt)}</td>
+                        <td className="px-6 py-4 font-bold text-sm">{inc.vehicleId}</td>
+                        <td className="px-6 py-4 text-sm">{inc.userName}</td>
+                        <td className="px-6 py-4"><Badge tone="purple">{inc.gestureDetected}</Badge></td>
                         <td className="px-6 py-4">
-                          <Badge
-                            tone={
-                              a.severity === 'critical'
-                                ? 'red'
-                                : a.severity === 'warning'
-                                ? 'amber'
-                                : 'slate'
-                            }
-                          >
-                            {a.severity}
-                          </Badge>
+                          <Badge tone={inc.status === 'active' ? 'red' : inc.status === 'acknowledged' ? 'amber' : 'green'}>{inc.status}</Badge>
                         </td>
-                        <td className="px-6 py-4">
-                          <Badge
-                            tone={
-                              a.status === 'open'
-                                ? 'amber'
-                                : a.status === 'investigating'
-                                ? 'purple'
-                                : 'green'
-                            }
-                          >
-                            {a.status}
-                          </Badge>
+                        <td className="px-6 py-4 text-sm text-slate-500">
+                          {inc.location?.latitude !== 0 ? (
+                            <a href={`https://maps.google.com/?q=${inc.location.latitude},${inc.location.longitude}`} target="_blank" rel="noopener noreferrer" className="text-[#6C47FF] hover:underline">
+                              View Map
+                            </a>
+                          ) : '—'}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </DataTableShell>
-          </section>
-        ) : null}
+            )}
+          </DataTableShell>
+        )}
       </main>
     </div>
   );
 }
-

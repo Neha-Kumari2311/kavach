@@ -38,11 +38,8 @@ export default function EmergencySOSButton({ onHoldComplete, onError }) {
     setIsSubmitting(true);
     setSuccess(false);
 
-    console.log('[SOS] Triggering SOS alert...');
-
     try {
       const location = await getCurrentLocation();
-
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 15000);
 
@@ -55,37 +52,23 @@ export default function EmergencySOSButton({ onHoldComplete, onError }) {
 
       clearTimeout(timeout);
       const data = await response.json();
-      console.log('[SOS] API response:', data);
 
       if (!response.ok) throw new Error(data.error || 'Failed to trigger SOS');
 
       if (data.contacts && data.contacts.length > 0) {
-        // Build WhatsApp links for each contact
-        const result = buildWhatsAppSOSLinks(
-          data.contacts,
-          location.latitude,
-          location.longitude,
-          data.userName
-        );
-
-        console.log('[SOS] WhatsApp links built:', result.links.length);
-
-        // Show the contact list modal
+        const result = buildWhatsAppSOSLinks(data.contacts, location.latitude, location.longitude, data.userName);
         setWhatsappLinks(result.links);
         setSentContacts(new Set());
         setShowContactsModal(true);
         setSuccess(true);
         setIsSubmitting(false);
-
         if (onHoldComplete) onHoldComplete(data);
       } else {
         setIsSubmitting(false);
         if (onError) onError(data.message || 'No trusted contacts found. Add contacts in Settings.');
       }
     } catch (error) {
-      console.error('[SOS] Error:', error);
       setIsSubmitting(false);
-
       if (onError) {
         onError(
           error.name === 'AbortError'
@@ -96,7 +79,7 @@ export default function EmergencySOSButton({ onHoldComplete, onError }) {
     }
   }, [getCurrentLocation, onHoldComplete, onError, isSubmitting]);
 
-  // ── Handle sending to a single contact (user clicks the button) ──
+  // ── Handle sending to a single contact ──
   const handleSendToContact = useCallback((link, index) => {
     window.open(link, '_blank');
     setSentContacts((prev) => new Set(prev).add(index));
@@ -175,69 +158,78 @@ export default function EmergencySOSButton({ onHoldComplete, onError }) {
 
   return (
     <>
-      <section className="flex flex-col items-center justify-center py-8">
-        <button
-          onPointerDown={startHold}
-          onPointerUp={stopHold}
-          onPointerLeave={stopHold}
-          onPointerCancel={stopHold}
-          onClick={handleClick}
-          onContextMenu={(e) => e.preventDefault()}
-          style={{ touchAction: 'none', userSelect: 'none' }}
-          disabled={isSubmitting || showContactsModal}
-          className={`sos-glow relative size-48 rounded-full flex flex-col items-center justify-center text-white active:scale-95 transition-transform ${
-            showContactsModal
-              ? 'bg-green-500'
-              : isSubmitting
-              ? 'bg-orange-500'
-              : 'bg-[#ef4444]'
-          } ${isSubmitting || showContactsModal ? 'cursor-not-allowed' : ''}`}
-        >
-          {isSubmitting ? (
-            <>
-              <span className="material-symbols-outlined text-6xl mb-1 animate-spin">sync</span>
-              <span className="font-bold text-lg tracking-wider">SENDING...</span>
-            </>
-          ) : showContactsModal ? (
-            <>
-              <span className="material-symbols-outlined text-6xl mb-1">check_circle</span>
-              <span className="font-bold text-lg tracking-wider">SOS SENT</span>
-            </>
-          ) : (
-            <>
-              <span className="material-symbols-outlined text-6xl mb-1">emergency_home</span>
-              <span className="font-bold text-lg tracking-wider">
-                {isHolding ? `${Math.ceil(3 - (holdProgress / 100) * 3)}s` : 'HOLD FOR SOS'}
-              </span>
-            </>
-          )}
+      {/* SOS Card matching reference design */}
+      <section className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-100 dark:border-slate-700 flex flex-col items-center">
+        {/* SOS Button with concentric rings */}
+        <div className="relative mb-5">
+          {/* Outer pulsing ring */}
+          <div className={`absolute inset-0 -m-6 rounded-full ${!isSubmitting && !showContactsModal ? 'animate-ping' : ''} bg-red-400/10`}></div>
+          <div className="absolute inset-0 -m-4 rounded-full bg-red-400/15 border border-red-300/30"></div>
+          <div className="absolute inset-0 -m-2 rounded-full bg-red-400/20 border border-red-300/40"></div>
+          
+          <button
+            onPointerDown={startHold}
+            onPointerUp={stopHold}
+            onPointerLeave={stopHold}
+            onPointerCancel={stopHold}
+            onClick={handleClick}
+            onContextMenu={(e) => e.preventDefault()}
+            style={{ touchAction: 'none', userSelect: 'none' }}
+            disabled={isSubmitting || showContactsModal}
+            className={`relative w-32 h-32 rounded-full flex flex-col items-center justify-center text-white transition-all active:scale-95 shadow-xl ${
+              showContactsModal
+                ? 'bg-green-500 shadow-green-500/30'
+                : isSubmitting
+                ? 'bg-orange-500 shadow-orange-500/30'
+                : 'bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/40'
+            } ${isSubmitting || showContactsModal ? 'cursor-not-allowed' : ''}`}
+          >
+            {isSubmitting ? (
+              <>
+                <span className="material-symbols-outlined text-4xl mb-0.5 animate-spin">sync</span>
+                <span className="font-bold text-xs tracking-wider">SENDING</span>
+              </>
+            ) : showContactsModal ? (
+              <>
+                <span className="material-symbols-outlined text-4xl mb-0.5">check_circle</span>
+                <span className="font-bold text-xs tracking-wider">SENT</span>
+              </>
+            ) : (
+              <>
+                <span className="material-symbols-outlined text-5xl mb-0.5">emergency_share</span>
+                <span className="font-bold text-xs tracking-wider">
+                  {isHolding ? `${Math.ceil(3 - (holdProgress / 100) * 3)}s` : 'SOS'}
+                </span>
+              </>
+            )}
 
-          {isHolding && (
-            <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 192 192">
-              <circle cx="96" cy="96" r="90" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="6" />
-              <circle cx="96" cy="96" r="90" fill="none" stroke="white" strokeWidth="6" strokeLinecap="round"
-                strokeDasharray={`${(holdProgress / 100) * 565.5} 565.5`} />
-            </svg>
-          )}
+            {/* Progress ring while holding */}
+            {isHolding && (
+              <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 128 128">
+                <circle cx="64" cy="64" r="58" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="4" />
+                <circle cx="64" cy="64" r="58" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round"
+                  strokeDasharray={`${(holdProgress / 100) * 364.4} 364.4`} />
+              </svg>
+            )}
+          </button>
+        </div>
 
-          <div className="absolute -inset-4 border-2 border-[#ef4444]/30 rounded-full"></div>
-        </button>
-
-        <p className="mt-8 text-sm text-slate-500 text-center px-8">
+        <h3 className="font-bold text-base text-center">Emergency Help</h3>
+        <p className="text-xs text-slate-500 text-center mt-1 max-w-[220px]">
           {showContactsModal
-            ? '👇 Tap each contact below to send the SOS via WhatsApp'
+            ? '👇 Tap each contact below to send via WhatsApp'
             : isSubmitting
             ? 'Preparing WhatsApp alerts...'
             : isHolding
             ? 'Keep holding...'
-            : 'Hold for 3 seconds to send SOS via WhatsApp to your trusted contacts.'}
+            : 'Hold for 3 seconds to alert your network and emergency services.'}
         </p>
       </section>
 
       {/* ── WhatsApp Contacts Modal ── */}
       {showContactsModal && whatsappLinks.length > 0 && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white dark:bg-slate-800 rounded-t-3xl w-full max-w-md shadow-2xl p-6 pb-10 animate-in slide-in-from-bottom">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-t-3xl w-full max-w-md shadow-2xl p-6 pb-10 animate-fade-in-up">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 📲 Send SOS to Contacts
@@ -267,7 +259,6 @@ export default function EmergencySOSButton({ onHoldComplete, onError }) {
                         : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 hover:border-green-400 hover:shadow-md'
                     }`}
                   >
-                    {/* WhatsApp icon */}
                     <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
                       isSent ? 'bg-green-500' : 'bg-[#25D366]'
                     }`}>
@@ -279,18 +270,12 @@ export default function EmergencySOSButton({ onHoldComplete, onError }) {
                         </svg>
                       )}
                     </div>
-
-                    {/* Contact info */}
                     <div className="flex-1 text-left">
                       <p className={`font-bold ${isSent ? 'text-green-700 dark:text-green-400' : 'text-slate-900 dark:text-white'}`}>
                         {contact.name}
                       </p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {contact.phone}
-                      </p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{contact.phone}</p>
                     </div>
-
-                    {/* Status */}
                     <span className={`text-xs font-semibold px-3 py-1 rounded-full ${
                       isSent
                         ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
@@ -303,7 +288,6 @@ export default function EmergencySOSButton({ onHoldComplete, onError }) {
               })}
             </div>
 
-            {/* All sent message */}
             {allSent && (
               <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800 text-center">
                 <p className="text-sm font-semibold text-green-700 dark:text-green-400">
@@ -312,13 +296,10 @@ export default function EmergencySOSButton({ onHoldComplete, onError }) {
               </div>
             )}
 
-            {/* Done button */}
             <button
               onClick={handleCloseModal}
               className={`w-full mt-4 py-3 rounded-xl font-bold text-white transition-all ${
-                allSent
-                  ? 'bg-green-500 hover:bg-green-600'
-                  : 'bg-slate-400 hover:bg-slate-500'
+                allSent ? 'bg-green-500 hover:bg-green-600' : 'bg-slate-400 hover:bg-slate-500'
               }`}
             >
               {allSent ? 'Done' : `${whatsappLinks.length - sentContacts.size} remaining — Close`}

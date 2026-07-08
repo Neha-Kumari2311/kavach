@@ -51,6 +51,7 @@ export const ROUTE_ROLE_MAP = {
  * These routes are accessible to everyone
  */
 export const PUBLIC_ROUTES = [
+  '/',
   '/login',
   '/register',
   '/forgot-password',

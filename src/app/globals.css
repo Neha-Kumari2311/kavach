@@ -1,60 +1,104 @@
-@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #8b47eb;
-  --color-background-light: #f7f6f8;
-  --color-background-dark: #181121;
-  --color-safety-green: #2ecc71;
-  --color-emergency-red: #ff4d4d;
-  --font-display: 'Public Sans', sans-serif;
+  --color-primary: #6C47FF;
+  --color-primary-light: #8B6AFF;
+  --color-primary-dark: #5234CC;
+  --color-accent: #FF6B9D;
+  --color-surface: #FFFFFF;
+  --color-surface-dark: #0F0A1A;
+  --color-card: #FFFFFF;
+  --color-card-dark: #1A1A24;
+  --color-safety-green: #10B981;
+  --color-emergency-red: #EF4444;
+  --color-warning-amber: #F59E0B;
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+:root {
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 0 24px rgba(108, 71, 255, 0.15);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-background-light: #181121;
-    --color-background-dark: #181121;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5);
+    --shadow-glow: 0 0 24px rgba(108, 71, 255, 0.25);
   }
 }
 
-body {
-  font-family: 'Public Sans', sans-serif;
+* {
   -webkit-tap-highlight-color: transparent;
-  min-height: max(884px, 100dvh);
 }
 
-.soft-shadow {
-  box-shadow: 0 4px 20px -2px rgba(139, 71, 235, 0.1);
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100dvh;
+  background: var(--color-surface);
 }
 
+@media (prefers-color-scheme: dark) {
+  body {
+    background: var(--color-surface-dark);
+  }
+}
+
+/* ===== Smooth Transitions ===== */
+.transition-base {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== Card Styles ===== */
+.card {
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  .card {
+    background: var(--color-card-dark);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+}
+
+/* ===== SOS Button Glow ===== */
 .sos-glow {
-  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-  animation: pulse 2s infinite;
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+  animation: sos-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-  70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+@keyframes sos-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+  50% { box-shadow: 0 0 0 16px rgba(239, 68, 68, 0); }
 }
 
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
+/* ===== Scrollbar Hiding ===== */
+.no-scrollbar::-webkit-scrollbar,
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
+.no-scrollbar,
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ===== Material Symbols ===== */
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
   font-weight: normal;
@@ -71,9 +115,30 @@ body {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
-/* ===== Fake Call Animations ===== */
+.material-symbols-outlined.fill-1,
+.fill-1 .material-symbols-outlined {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
 
-/* Ringing text pulse */
+/* ===== Animations ===== */
+
+/* Fade in up */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Fake Call Animations */
 .fake-call-ringing-text {
   animation: ringingPulse 1.5s ease-in-out infinite;
 }
@@ -83,7 +148,6 @@ body {
   50% { opacity: 0.4; }
 }
 
-/* Accept button gentle bounce */
 .fake-call-accept-bounce {
   animation: acceptBounce 2s ease-in-out infinite;
 }
@@ -93,23 +157,15 @@ body {
   50% { transform: scale(1.08); }
 }
 
-/* Bottom sheet slide-up entrance */
 .fake-call-sheet-enter {
   animation: sheetSlideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
 @keyframes sheetSlideUp {
-  from {
-    transform: translateY(100%);
-    opacity: 0.5;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  from { transform: translateY(100%); opacity: 0.5; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
-/* Full-screen overlay fade-in */
 .fake-call-overlay {
   animation: overlayFadeIn 0.3s ease-out forwards;
 }
@@ -119,44 +175,27 @@ body {
   to { opacity: 1; }
 }
 
-/* ===== Siren Animations ===== */
-
-/* Pulsing red glow for active siren */
+/* Siren */
 .siren-active-glow {
   animation: sirenGlow 0.8s ease-in-out infinite alternate;
 }
 
 @keyframes sirenGlow {
-  from {
-    box-shadow: 0 0 8px 2px rgba(239, 68, 68, 0.3);
-  }
-  to {
-    box-shadow: 0 0 20px 6px rgba(239, 68, 68, 0.5);
-  }
+  from { box-shadow: 0 0 8px 2px rgba(239, 68, 68, 0.3); }
+  to { box-shadow: 0 0 20px 6px rgba(239, 68, 68, 0.5); }
 }
 
-/* ===== Dashcam Animations ===== */
-
-/* SOS triggered flash banner */
+/* Dashcam */
 .sos-triggered-flash {
   animation: sosFlash 0.6s ease-out;
 }
 
 @keyframes sosFlash {
-  0% {
-    transform: translateY(-20px) scale(0.95);
-    opacity: 0;
-  }
-  60% {
-    transform: translateY(4px) scale(1.02);
-  }
-  100% {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
+  0% { transform: translateY(-20px) scale(0.95); opacity: 0; }
+  60% { transform: translateY(4px) scale(1.02); }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
 }
 
-/* Recording dot blink */
 .recording-dot-blink {
   animation: dotBlink 1s step-start infinite;
 }
@@ -166,19 +205,97 @@ body {
   50% { opacity: 0; }
 }
 
-/* ===== Predict Safety Animations ===== */
-
-.predict-result-enter {
-  animation: predictSlideUp 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+/* Skeleton loading shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
-@keyframes predictSlideUp {
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-md);
+}
+
+@media (prefers-color-scheme: dark) {
+  .skeleton {
+    background: linear-gradient(90deg, #1a1a24 25%, #252530 50%, #1a1a24 75%);
+    background-size: 200% 100%;
+  }
+}
+
+/* Gradient text */
+.text-gradient {
+  background: linear-gradient(135deg, #6C47FF, #FF6B9D);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass morphism */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+@media (prefers-color-scheme: dark) {
+  .glass {
+    background: rgba(15, 15, 20, 0.7);
+  }
+}
+
+/* ===== Details/Summary marker hiding ===== */
+details summary::-webkit-details-marker {
+  display: none;
+}
+
+details summary::marker {
+  display: none;
+  content: '';
+}
+
+/* ===== Soft shadow ===== */
+.soft-shadow {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* ===== Page transition ===== */
+@keyframes page-enter {
   from {
-    transform: translateY(16px);
     opacity: 0;
+    transform: translateY(8px);
   }
   to {
-    transform: translateY(0);
     opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: page-enter 0.3s ease-out forwards;
+}
+
+/* ===== Pulse ring for SOS ===== */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+.pulse-ring {
+  animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ===== Bottom nav safe area ===== */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
   }
 }

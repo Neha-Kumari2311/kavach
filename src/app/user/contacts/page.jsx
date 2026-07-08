@@ -137,17 +137,7 @@ export default function ContactsPage() {
   };
 
   return (
-    
-    <div className="bg-[#f7f6f8] dark:bg-[#181121] font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
-      <UserDashboardHeader
-        userName={session?.user?.name || "User"}
-        safetyScore={safetyScore}
-        safetyLabel={safetyLabel}
-        safetyColor={safetyColor}
-        safetyLoading={safetyLoading}
-        onNotificationClick={() => router.push("/user/notifications")}
-      />
-      <main className="flex-1 px-4 pb-24 max-w-md mx-auto w-full space-y-6">
+    <div className="px-4 max-w-2xl mx-auto w-full space-y-6 pt-4 pb-4">
         {/* Header */}
         <div className="flex items-center justify-between pt-4">
           <div>
@@ -372,35 +362,6 @@ export default function ContactsPage() {
             ))}
           </div>
         )}
-      </main>
-
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 px-6 py-3 z-50">
-        <div className="max-w-md mx-auto grid grid-cols-4 gap-1">
-          <Link
-            href="/user/dashboard"
-            className="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500"
-          >
-            <span className="material-symbols-outlined">home</span>
-            <span className="text-[10px] font-medium">Home</span>
-          </Link>
-          <Link
-            href="/user/dashcam"
-            className="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500"
-          >
-            <span className="material-symbols-outlined">videocam</span>
-            <span className="text-[10px] font-medium">Dashcam</span>
-          </Link>
-          <Link
-            href="/user/store"
-            className="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500"
-          >
-            <span className="material-symbols-outlined">shopping_bag</span>
-            <span className="text-[10px] font-medium">Store</span>
-          </Link>
-          
-        </div>
-      </nav>
     </div>
   );
 }

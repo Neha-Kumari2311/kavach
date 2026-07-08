@@ -2,6 +2,8 @@ import { apiJson, handleApiError, requireSession } from '@/lib/api-helpers';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/user/profile
  * Get the current authenticated user's profile

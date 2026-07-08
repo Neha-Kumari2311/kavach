@@ -96,4 +96,51 @@ export function buildWhatsAppSOSLinks(contacts, latitude, longitude, userName) {
   };
 }
 
+/**
+ * Generate an SMS deep link for a single contact.
+ * Works on all phones — opens the native SMS/Messages app with pre-filled text.
+ *
+ * @param {string} phone - Phone number
+ * @param {string} message - Pre-filled message
+ * @returns {string} SMS deep link URL
+ */
+export function getSMSLink(phone, message) {
+  let cleaned = phone.replace(/[\s\-\(\)\+]/g, '');
+  if (cleaned.length === 10 && /^\d{10}$/.test(cleaned)) {
+    cleaned = '+91' + cleaned;
+  } else if (!cleaned.startsWith('+')) {
+    cleaned = '+' + cleaned;
+  }
+  const encoded = encodeURIComponent(message);
+  // Use & for iOS and ? for Android — &body= works on both modern platforms
+  return `sms:${cleaned}?body=${encoded}`;
+}
+
+/**
+ * Build both WhatsApp and SMS links for all contacts.
+ * Returns an array with both link types per contact.
+ *
+ * @param {Array<{name: string, phone: string}>} contacts
+ * @param {number} latitude
+ * @param {number} longitude
+ * @param {string} [userName]
+ * @returns {{ success: boolean, contactCount: number, links: Array<{name: string, phone: string, whatsappLink: string, smsLink: string}> }}
+ */
+export function buildSOSLinks(contacts, latitude, longitude, userName) {
+  if (!contacts || contacts.length === 0) {
+    return { success: false, contactCount: 0, links: [] };
+  }
+
+  const sosMessage = buildSOSMessage(latitude, longitude, userName);
+
+  const links = contacts.map((contact) => ({
+    name: contact.name,
+    phone: contact.phone,
+    whatsappLink: getWhatsAppLink(contact.phone, sosMessage),
+    smsLink: getSMSLink(contact.phone, sosMessage),
+  }));
+
+  return { success: true, contactCount: contacts.length, links };
+}
+
 export default buildWhatsAppSOSLinks;

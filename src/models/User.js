@@ -39,6 +39,11 @@ const UserSchema = new mongoose.Schema(
       default: 'user',
       required: true,
     },
+    companyId: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     createdAt: {
       type: Date,
       default: Date.now,

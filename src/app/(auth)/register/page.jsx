@@ -13,8 +13,7 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [accountType, setAccountType] = useState('individual');
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -24,27 +23,22 @@ export default function RegisterPage() {
     setError('');
     setSuccess(false);
 
-    // Client-side validation
     if (!phone || !/^\d{10}$/.test(phone)) {
       setError('Please enter a valid 10-digit phone number');
       return;
     }
-
     if (email && !/^\S+@\S+\.\S+$/.test(email)) {
       setError('Please enter a valid email address');
       return;
     }
-
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
-
     if (password.length < 6) {
       setError('Password must be at least 6 characters');
       return;
     }
-
     if (!acceptedTerms) {
       setError('You must accept the terms and conditions');
       return;
@@ -55,16 +49,8 @@ export default function RegisterPage() {
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name,
-          phone,
-          email: email || null,
-          password,
-          accountType,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone, email: email || null, password, accountType, companyId: accountType === 'company' ? document.getElementById('company-id-field')?.value?.trim() || null : null }),
       });
 
       const data = await response.json();
@@ -75,370 +61,248 @@ export default function RegisterPage() {
         return;
       }
 
-      // Success
       setSuccess(true);
       setIsSubmitting(false);
-
-      // Redirect to login after 2 seconds
-      setTimeout(() => {
-        router.push('/login');
-      }, 2000);
+      setTimeout(() => router.push('/login'), 2000);
     } catch (err) {
-      console.error('Registration error:', err);
       setError('An unexpected error occurred. Please try again.');
       setIsSubmitting(false);
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const toggleConfirmPasswordVisibility = () => {
-    setShowConfirmPassword(!showConfirmPassword);
-  };
+  if (success) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
+        <div className="w-full max-w-[480px] text-center animate-fade-in-up">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-100 mb-4">
+            <span className="material-symbols-outlined text-emerald-600 text-3xl">check_circle</span>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Account Created!</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Redirecting you to login...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-[#f7f6f8] dark:bg-[#181121] min-h-screen flex flex-col items-center justify-center p-4 font-display">
-      {/* Main Container */}
-      <div className="w-full max-w-[480px] bg-white dark:bg-slate-900 rounded-xl shadow-sm overflow-hidden border border-slate-200 dark:border-slate-800">
-        {/* Header Section */}
-        <div className="relative">
-          <div className="h-32 bg-[#8b47eb]/10 flex items-center justify-center relative overflow-hidden">
-            {/* Abstract Security Pattern Background */}
-            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#8b47eb] via-transparent to-transparent"></div>
-            <div className="z-10 bg-[#8b47eb] text-white p-3 rounded-xl shadow-lg">
-              <span className="material-symbols-outlined text-4xl block">shield</span>
-            </div>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
+      {/* Main Card */}
+      <div className="w-full max-w-[480px] animate-fade-in-up">
+        {/* Logo & Brand */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#6C47FF] to-[#FF6B9D] shadow-lg mb-4">
+            <span className="material-symbols-outlined text-white text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+              shield
+            </span>
           </div>
-          <div className="px-8 pt-6 pb-2">
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-              Join Kavach
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">
-              Your Safety ! Our Priority !
-            </p>
-          </div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+            Create Account
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Join Kavach for your safety
+          </p>
         </div>
 
-        {/* Registration Form */}
-        <form onSubmit={handleSubmit} className="px-8 py-6 space-y-5">
-          {/* Success Message */}
-          {success && (
-            <div className="rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-3 flex items-center gap-2">
-              <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-lg">
-                check_circle
-              </span>
-              <p className="text-sm text-green-600 dark:text-green-400 flex-1">
-                Account created successfully! Redirecting to login...
-              </p>
+        {/* Card Container */}
+        <div className="bg-white dark:bg-[#1A1A24] rounded-2xl shadow-[var(--shadow-lg)] border border-slate-100 dark:border-slate-800/50 p-6 space-y-5">
+
+          {/* Account Type Selector */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2.5">
+              Account Type
+            </label>
+            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setAccountType('individual')}
+                disabled={isSubmitting}
+                className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                  accountType === 'individual'
+                    ? 'bg-white dark:bg-[#6C47FF] text-[#6C47FF] dark:text-white shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                }`}
+              >
+                <span className="material-symbols-outlined text-lg">person</span>
+                <span>Individual</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAccountType('company')}
+                disabled={isSubmitting}
+                className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                  accountType === 'company'
+                    ? 'bg-white dark:bg-[#6C47FF] text-[#6C47FF] dark:text-white shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                }`}
+              >
+                <span className="material-symbols-outlined text-lg">corporate_fare</span>
+                <span>Company</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Company ID - only shown for company account */}
+          {accountType === 'company' && (
+            <div className="bg-[#6C47FF]/5 border border-[#6C47FF]/20 rounded-xl p-3 space-y-2">
+              <label className="block text-xs font-bold text-[#6C47FF]">Company ID *</label>
+              <input
+                type="text"
+                placeholder="e.g. OLA-FLEET-001"
+                required={accountType === 'company'}
+                disabled={isSubmitting}
+                className="w-full px-4 py-3 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6C47FF]/30 focus:border-[#6C47FF] transition-all disabled:opacity-50"
+                id="company-id-field"
+              />
+              <p className="text-[9px] text-slate-400">This ID will be used by passengers on their dashcam to link rides to your fleet. Choose a unique identifier.</p>
             </div>
           )}
 
           {/* Error Message */}
           {error && (
-            <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 flex items-center gap-2">
-              <span className="material-symbols-outlined text-red-600 dark:text-red-400 text-lg">
-                error
-              </span>
-              <p className="text-sm text-red-600 dark:text-red-400 flex-1">
-                {error}
-              </p>
+            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-red-50 dark:bg-red-900/15 border border-red-100 dark:border-red-800/30">
+              <span className="material-symbols-outlined text-red-500 text-lg">error</span>
+              <p className="text-sm text-red-600 dark:text-red-400 flex-1">{error}</p>
             </div>
           )}
 
-          {/* Account Type Selection */}
-          <div>
-            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-              Account Type
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <label
-                className={`relative flex flex-col items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                  accountType === 'individual'
-                    ? 'border-[#8b47eb] bg-[#8b47eb]/5 hover:bg-[#8b47eb]/10'
-                    : 'border-slate-200 dark:border-slate-800 hover:border-[#8b47eb]/50'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="account_type"
-                  value="individual"
-                  checked={accountType === 'individual'}
-                  onChange={(e) => {
-                    setAccountType(e.target.value);
-                    setError('');
-                  }}
-                  disabled={isSubmitting}
-                  className="sr-only"
-                />
-                <span
-                  className={`material-symbols-outlined mb-1 ${
-                    accountType === 'individual'
-                      ? 'text-[#8b47eb]'
-                      : 'text-slate-400'
-                  }`}
-                >
-                  person
-                </span>
-                <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  Individual
-                </span>
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Full Name */}
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Full Name
               </label>
-              <label
-                className={`relative flex flex-col items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                  accountType === 'company'
-                    ? 'border-[#8b47eb] bg-[#8b47eb]/5 hover:bg-[#8b47eb]/10'
-                    : 'border-slate-200 dark:border-slate-800 hover:border-[#8b47eb]/50'
-                } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                <input
-                  type="radio"
-                  name="account_type"
-                  value="company"
-                  checked={accountType === 'company'}
-                  onChange={(e) => {
-                    setAccountType(e.target.value);
-                    setError('');
-                  }}
-                  disabled={isSubmitting}
-                  className="sr-only"
-                />
-                <span
-                  className={`material-symbols-outlined mb-1 ${
-                    accountType === 'company'
-                      ? 'text-[#8b47eb]'
-                      : 'text-slate-400'
-                  }`}
-                >
-                  corporate_fare
-                </span>
-                <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  Company
-                </span>
-              </label>
+              <input
+                type="text"
+                placeholder="Your full name"
+                value={name}
+                onChange={(e) => { setName(e.target.value); setError(''); }}
+                required
+                disabled={isSubmitting}
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6C47FF]/30 focus:border-[#6C47FF] transition-all disabled:opacity-50"
+              />
             </div>
-          </div>
 
-          {/* Full Name */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-              <span className="material-symbols-outlined text-xs">badge</span>
-              Full Name
-            </label>
-            <input
-              type="text"
-              placeholder="Your full name"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                setError('');
-              }}
-              required
-              disabled={isSubmitting}
-              className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#8b47eb]/20 focus:border-[#8b47eb] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-          </div>
-
-          {/* Phone Number (Mandatory) */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-              <span className="material-symbols-outlined text-xs">call</span>
-              Phone Number <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">+91</span>
+            {/* Phone Number */}
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Phone Number <span className="text-red-500">*</span>
+              </label>
               <input
                 type="tel"
-                placeholder="9876543210"
+                placeholder="10-digit mobile number"
                 value={phone}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                  setPhone(val);
-                  setError('');
-                }}
+                onChange={(e) => { setPhone(e.target.value.replace(/\D/g, '').slice(0, 10)); setError(''); }}
                 required
                 disabled={isSubmitting}
-                className="w-full pl-12 pr-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#8b47eb]/20 focus:border-[#8b47eb] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6C47FF]/30 focus:border-[#6C47FF] transition-all disabled:opacity-50"
               />
             </div>
-            <p className="text-[10px] text-slate-400">10-digit mobile number</p>
-          </div>
 
-          {/* Email Address (Optional) */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-              <span className="material-symbols-outlined text-xs">alternate_email</span>
-              Email Address <span className="text-slate-400 font-normal text-xs">(Optional)</span>
-            </label>
-            <input
-              type="email"
-              placeholder="john@example.com"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setError('');
-              }}
-              disabled={isSubmitting}
-              className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#8b47eb]/20 focus:border-[#8b47eb] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-          </div>
-
-          {/* Password */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-              <span className="material-symbols-outlined text-xs">lock</span>
-              Password
-            </label>
-            <div className="relative">
+            {/* Email */}
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Email <span className="text-slate-400 text-xs font-normal">(Optional)</span>
+              </label>
               <input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setError('');
-                }}
-                required
+                type="email"
+                placeholder="john@example.com"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setError(''); }}
                 disabled={isSubmitting}
-                className="w-full px-4 py-3 pr-10 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#8b47eb]/20 focus:border-[#8b47eb] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6C47FF]/30 focus:border-[#6C47FF] transition-all disabled:opacity-50"
               />
-              <button
-                type="button"
-                onClick={togglePasswordVisibility}
-                disabled={isSubmitting}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer hover:text-[#8b47eb] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                <span className="material-symbols-outlined">
-                  {showPassword ? 'visibility_off' : 'visibility'}
-                </span>
-              </button>
             </div>
-            {/* Password Strength Hint */}
-            <div className="flex gap-1 mt-1.5">
-              <div className={`h-1 flex-1 rounded-full ${password.length >= 2 ? 'bg-[#8b47eb]' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
-              <div className={`h-1 flex-1 rounded-full ${password.length >= 4 ? 'bg-[#8b47eb]' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
-              <div className={`h-1 flex-1 rounded-full ${password.length >= 6 ? 'bg-[#8b47eb]' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
-              <div className={`h-1 flex-1 rounded-full ${password.length >= 8 ? 'bg-[#8b47eb]' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
-            </div>
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
-              Use at least 6 characters
-            </p>
-          </div>
 
-          {/* Confirm Password */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-              <span className="material-symbols-outlined text-xs">verified_user</span>
-              Confirm Password
-            </label>
-            <div className="relative">
+            {/* Password */}
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Min 6 characters"
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                  required
+                  disabled={isSubmitting}
+                  className="w-full px-4 py-3 pr-11 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6C47FF]/30 focus:border-[#6C47FF] transition-all disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-xl">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Confirm Password
+              </label>
               <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                placeholder="••••••••"
+                type="password"
+                placeholder="Re-enter password"
                 value={confirmPassword}
-                onChange={(e) => {
-                  setConfirmPassword(e.target.value);
-                  setError('');
-                }}
+                onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
                 required
                 disabled={isSubmitting}
-                className="w-full px-4 py-3 pr-10 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#8b47eb]/20 focus:border-[#8b47eb] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6C47FF]/30 focus:border-[#6C47FF] transition-all disabled:opacity-50"
               />
-              <button
-                type="button"
-                onClick={toggleConfirmPasswordVisibility}
-                disabled={isSubmitting}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer hover:text-[#8b47eb] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-              >
-                <span className="material-symbols-outlined">
-                  {showConfirmPassword ? 'visibility_off' : 'visibility'}
-                </span>
-              </button>
             </div>
-          </div>
 
-          {/* Terms and Conditions */}
-          <div className="flex items-start gap-3 py-2">
-            <input
-              type="checkbox"
-              id="terms"
-              checked={acceptedTerms}
-              onChange={(e) => {
-                setAcceptedTerms(e.target.checked);
-                setError('');
-              }}
-              required
-              disabled={isSubmitting}
-              className="mt-1 h-4 w-4 rounded border-slate-300 text-[#8b47eb] focus:ring-[#8b47eb] disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-            <label
-              htmlFor="terms"
-              className="text-xs text-slate-500 dark:text-slate-400 leading-normal"
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={isSubmitting || !acceptedTerms}
+              className="w-full py-3.5 bg-[#6C47FF] hover:bg-[#5234CC] disabled:bg-[#6C47FF]/50 text-white font-semibold rounded-xl shadow-md shadow-[#6C47FF]/20 hover:shadow-lg hover:shadow-[#6C47FF]/25 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
             >
-              By creating an account, you agree to our{' '}
-              <Link
-                href="/terms"
-                className="text-[#8b47eb] hover:underline font-semibold"
-              >
-                Terms of Service
-              </Link>{' '}
-              and{' '}
-              <Link
-                href="/privacy"
-                className="text-[#8b47eb] hover:underline font-semibold"
-              >
-                Privacy Policy
-              </Link>
-              .
-            </label>
-          </div>
-
-          {/* Primary Action */}
-          <button
-            type="submit"
-            disabled={isSubmitting || !acceptedTerms}
-            className="w-full bg-[#8b47eb] hover:bg-[#8b47eb]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 rounded-lg shadow-lg shadow-[#8b47eb]/20 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
-          >
-            {isSubmitting ? (
-              <>
-                <span className="material-symbols-outlined animate-spin text-lg">
-                  sync
-                </span>
-                <span>Creating Account...</span>
-              </>
-            ) : (
-              <>
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  <span>Creating account...</span>
+                </>
+              ) : (
                 <span>Create Secure Account</span>
-                <span className="material-symbols-outlined text-lg">arrow_forward</span>
-              </>
-            )}
-          </button>
-        </form>
+              )}
+            </button>
+          </form>
+        </div>
 
-        {/* Footer / Back to Login */}
-        <div className="px-8 pb-8 text-center">
-          <div className="relative flex py-3 items-center">
-            <div className="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
-            <span className="flex-shrink mx-4 text-xs text-slate-400 uppercase tracking-widest font-bold">
-              Already a member?
-            </span>
-            <div className="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
-          </div>
-          <Link
-            href="/login"
-            className="inline-flex items-center justify-center gap-2 w-full py-3 text-slate-600 dark:text-slate-300 font-semibold hover:text-[#8b47eb] transition-colors border border-transparent hover:border-[#8b47eb]/20 rounded-lg"
-          >
-            <span className="material-symbols-outlined text-lg">login</span>
-            Back to Login
+        {/* Footer */}
+        <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-6">
+          Already have an account?{' '}
+          <Link href="/login" className="font-semibold text-[#6C47FF] hover:text-[#5234CC] transition-colors">
+            Sign in
           </Link>
+        </p>
+
+        {/* Trust Indicators */}
+        <div className="flex items-center justify-center gap-4 mt-8 opacity-50">
+          <div className="flex items-center gap-1.5 text-xs text-slate-400">
+            <span className="material-symbols-outlined text-sm">lock</span>
+            <span>Encrypted</span>
+          </div>
+          <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></div>
+          <div className="flex items-center gap-1.5 text-xs text-slate-400">
+            <span className="material-symbols-outlined text-sm">verified_user</span>
+            <span>Secure</span>
+          </div>
+          <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></div>
+          <div className="flex items-center gap-1.5 text-xs text-slate-400">
+            <span className="material-symbols-outlined text-sm">privacy_tip</span>
+            <span>Private</span>
+          </div>
         </div>
       </div>
-
-      {/* Extra space for mobile keyboard comfort */}
-      <div className="h-8"></div>
     </div>
   );
 }

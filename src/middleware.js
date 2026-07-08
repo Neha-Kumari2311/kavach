@@ -47,7 +47,17 @@ export async function middleware(request) {
 
   // Check if user has the required role
   if (!hasRole(userRole, requiredRole)) {
-    // User doesn't have required role - redirect to login with error
+    // User is authenticated but accessing wrong dashboard — redirect to their correct one
+    const correctDashboard = userRole === 'company' ? '/company/dashboard'
+      : userRole === 'admin' ? '/admin/dashboard'
+      : '/user/dashboard';
+    
+    // Only redirect if they're not already going to their dashboard
+    if (!pathname.startsWith(correctDashboard.split('/dashboard')[0])) {
+      return NextResponse.redirect(new URL(correctDashboard, request.url));
+    }
+
+    // If somehow still wrong, redirect to login
     const loginUrl = new URL('/api/auth/signin', request.url);
     loginUrl.searchParams.set('callbackUrl', pathname);
     loginUrl.searchParams.set('error', 'AccessDenied');

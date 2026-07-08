@@ -129,7 +129,7 @@ export default function LiveLocationCard({
   return (
     <section className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-700">
       <div
-        className="h-44 bg-slate-200 dark:bg-slate-700 relative overflow-hidden cursor-pointer group"
+        className="h-64 bg-slate-200 dark:bg-slate-700 relative overflow-hidden cursor-pointer group"
         onClick={handleViewMap}
         role="button"
         tabIndex={0}
@@ -170,36 +170,22 @@ export default function LiveLocationCard({
         </div>
       </div>
 
-      <div className="p-4 flex items-center justify-between">
-        <div>
-          <h3 className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-            Live Location Sharing
-            {isTrackingEnabled && (
-              <span className="inline-block size-2 rounded-full bg-green-500 animate-pulse"></span>
-            )}
-          </h3>
-          <p className="text-xs text-slate-500">
-            {coords && (
-              <span className="block">
-                <span className="material-symbols-outlined text-[11px] align-middle mr-0.5">location_on</span>
-                {locationName}
-              </span>
-            )}
-            Real-time tracking is currently {isTrackingEnabled ? 'ON' : 'OFF'}
-            {lastUpdate && isTrackingEnabled && (
-              <span className="block mt-0.5">Last update: {formatLastUpdate(lastUpdate)}</span>
-            )}
-          </p>
-        </div>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            checked={isTrackingEnabled}
-            onChange={onToggleTracking}
-            className="sr-only peer"
-          />
-          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#8b47eb]"></div>
-        </label>
+      <div className="p-4">
+        <h3 className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+          Live Location
+          <span className="inline-block size-2 rounded-full bg-green-500 animate-pulse"></span>
+        </h3>
+        <p className="text-xs text-slate-500">
+          {coords && (
+            <span className="block">
+              <span className="material-symbols-outlined text-[11px] align-middle mr-0.5">location_on</span>
+              {locationName}
+            </span>
+          )}
+          {lastUpdate && (
+            <span className="block mt-0.5">Last update: {formatLastUpdate(lastUpdate)}</span>
+          )}
+        </p>
       </div>
     </section>
   );

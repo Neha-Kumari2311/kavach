@@ -1,5 +1,5 @@
 import { apiJson, handleApiError, requireSession } from '@/lib/api-helpers';
-import { createSosEvent, listSosEventsForUser } from '@/lib/services/sos-service';
+import { createSosEvent, listSosEventsForUser, resolveSosEvent } from '@/lib/services/sos-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,7 +70,9 @@ export async function POST(request) {
 
 /**
  * GET /api/sos
- * Get user's SOS events (optional - for history)
+ * Get SOS events:
+ * - Admin: returns ALL SOS events (for admin dashboard)
+ * - Regular user: returns only their own SOS events
  */
 export async function GET(request) {
   try {
@@ -78,14 +80,19 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status'); // Optional filter: 'active' or 'resolved'
+
+    // Admin sees all SOS events; regular users see only their own
+    const isAdmin = session.user.role === 'admin';
     const sosEvents = await listSosEventsForUser({
-      userId: session.user.id,
+      userId: isAdmin ? null : session.user.id,
       status,
     });
 
     return apiJson({
       sosEvents: sosEvents.map((event) => ({
         id: event._id.toString(),
+        userId: event.userId?.toString() || null,
+        userName: event.userName || null,
         latitude: event.latitude,
         longitude: event.longitude,
         status: event.status,
@@ -95,5 +102,53 @@ export async function GET(request) {
   } catch (error) {
     console.error('SOS fetch error:', error);
     return handleApiError(error, 'Failed to fetch SOS events', 500);
+  }
+}
+
+/**
+ * PATCH /api/sos
+ * Update SOS event status (Admin only — resolve an active SOS)
+ * 
+ * Body:
+ * - sosId: string (required, the SOS event ID)
+ * - status: string (required, 'resolved')
+ */
+export async function PATCH(request) {
+  try {
+    const session = await requireSession('Unauthorized');
+
+    // Admin or company (official) can resolve SOS events
+    if (session.user.role !== 'admin' && session.user.role !== 'company') {
+      return apiJson({ error: 'Admin or company access required to resolve SOS events' }, 403);
+    }
+
+    const body = await request.json();
+    const { sosId, status } = body;
+
+    if (!sosId || !status) {
+      return apiJson({ error: 'sosId and status are required' }, 400);
+    }
+
+    if (status !== 'resolved') {
+      return apiJson({ error: 'Status can only be changed to "resolved"' }, 400);
+    }
+
+    const updatedEvent = await resolveSosEvent(sosId);
+
+    if (!updatedEvent) {
+      return apiJson({ error: 'SOS event not found' }, 404);
+    }
+
+    return apiJson({
+      message: 'SOS event resolved successfully',
+      sos: {
+        id: updatedEvent._id.toString(),
+        status: updatedEvent.status,
+        resolvedAt: updatedEvent.updatedAt,
+      },
+    });
+  } catch (error) {
+    console.error('SOS resolve error:', error);
+    return handleApiError(error, 'Failed to resolve SOS event', 500);
   }
 }

@@ -1,7 +1,6 @@
 /**
- * Static curated Safety Store products.
- * No backend required.
- * Prices are shown on Blinkit/Amazon — not on our website.
+ * Curated Safety Store products with real buy links.
+ * Images use inline SVG data URIs (always load, no external dependency).
  */
 
 export const STORE_CATEGORIES = [
@@ -10,107 +9,87 @@ export const STORE_CATEGORIES = [
   'Personal Alarm',
   'GPS Tracker',
   'Safety Keychain',
-  'Hidden Camera',
+  'Stun Device',
+  'Self Defense',
   'Safety Kit',
 ];
 
+// Simple SVG icon generator for product cards
+function productSvg(emoji, bgColor) {
+  return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><rect width="400" height="400" fill="${bgColor}"/><text x="200" y="220" font-size="120" text-anchor="middle" dominant-baseline="central">${emoji}</text></svg>`)}`;
+}
+
 export const STORE_PRODUCTS = [
   {
-    id: 'pepper-spray',
-    name: 'Pro-Guard Pepper Spray',
+    id: 'sirona-pepper-spray',
+    name: 'Sirona IMPOWER Pepper Spray',
     category: 'Pepper Spray',
-    description: 'Instantly incapacitates with 10ft range spray.',
-    usage: 'Hold firmly, aim at attacker\'s face, spray in short bursts while moving away.',
-    badge: 'Non-Lethal',
-    badgeColor:
-      'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
-    imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDxl2eLWIUQ-wsPH6j8svtSN0W5h5ljCFQoVZ5lxzNoHrXNXqO48RK-3clzjUnkLBI8jR5OpT2ot4IieVVTawt4UvzNrZ9FRqT_tjKovjXy1jZYa2z753tdNZ5fehObcfs-BlJMmwvegrdpcK4XqSzmlgnAZU4BNeTQWaRh3zNzJO0iXn33uynYj9W9AW_UxiKnpkv8XEoozKaZM04THsrwKnZmWZ33bMYIEaAL2FrnA8-_Zkm9pjmUGfnrRK4bEimrh02WZCstVkI',
-    blinkitUrl: 'https://www.blinkit.com/s/pepper-spray',
-    amazonUrl: 'https://www.amazon.in/s?k=pepper+spray+women+safety',
+    description: 'Self defence pepper spray for women safety. Compact & effective.',
+    imageUrl: productSvg('🌶️', '#FEE2E2'),
+    buyUrl: 'https://blinkit.com/prn/sirona-impower-self-defence-pepper-spray/prid/501459',
+  },
+  {
+    id: 'impower-pepper-spray',
+    name: 'IMPOWER Self Defence Green Chilli Spray',
+    category: 'Pepper Spray',
+    description: 'Strong self defence spray with safety lock. Range up to 12 feet.',
+    imageUrl: productSvg('🧴', '#DCFCE7'),
+    buyUrl: 'https://www.amazon.in/Impower-Defence-Green-Chilli-Spray/dp/B075KC6SLD/ref=sr_1_6_in_f3_0o_at_mod_primary_alm?crid=2AYU2IYSGIPLJ&dib=eyJ2IjoiMSJ9.93z-GxaxnDeMGrFIuP8dGn8tOD_ug9sdInh8PM0IKkCFBwHjs7dr2XWinABOYDTS1A031HZ_ifISgdj6AgYPm21CwutiXMvoX8QjmhctM4tr16RhZZRKBrEyg_aHMHragsCBtBJMGmlGrK9BPsNMF25JmEMWtf79kk7bmwB0ke0WZ7eogRhoiTqahrXDQYautq76FgrQxMhCi1DICsD8ZWZCtKQ0YPbIGtctzsmq7eNqckJK4YDNSYW0lt3lhGoVErxCtwhQbaW5juOojVa9O0I4qPN_Yuk3qO-fSThOCXU.om-LaQOzDOVzVoq467hihYZRsnWvEFLSjNYTLAl2GNw&dib_tag=se&keywords=women+safety+kit&qid=1783497631&sbo=m6DjfpMzMLDmL8pSMKX8hw%3D%3D&sprefix=women+safety+kit%2Caps%2C380&sr=8-6',
   },
   {
     id: 'personal-alarm',
-    name: 'Sonic Siren Alarm',
+    name: 'Le Figaro Water Alarm Bell',
     category: 'Personal Alarm',
-    description: 'Pull-pin activation with flashing SOS LED light.',
-    usage: 'Attach to bag or keychain. In danger, pull the pin to activate 130dB alarm that draws attention.',
-    badge: '130 Decibels',
-    badgeColor:
-      'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
-    imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuCl7NKkQ4mOh3Gt4VeJUAv02Oef0X9SSHbjNnwA96yzhAH_N8J8usOS4q1uHtqjoMBpGRKD1IuCaqJA0Wbi1XsDKT3-v906v1PjQlBpoOA042XdGutwae28o8501MZhh-UYUffcfMewsqghC0EmNUDWcQ2yQaNZ3R-Y9125uYspnyjEFZHiBMsRxF51P2iOa6Cvh2aOS40tb58OBTvmd5GBfIdmGTbvSzuobeBCJKUEhFp_3PRyPw24_bwebuMW1DpVvFUbCKwbU2w',
-    blinkitUrl: 'https://www.blinkit.com/s/personal-alarm',
-    amazonUrl: 'https://www.amazon.in/s?k=personal+safety+alarm+130+db',
+    description: 'Loud personal alarm for emergencies. Compact keychain design.',
+    imageUrl: productSvg('🚨', '#FEF3C7'),
+    buyUrl: 'https://blinkit.com/prn/le-figaro-water-alarm-bell/prid/766264',
+  },
+  {
+    id: 'apple-airtag',
+    name: 'Apple AirTag',
+    category: 'GPS Tracker',
+    description: 'Precision finding. Track your belongings via Find My network.',
+    imageUrl: productSvg('📍', '#DBEAFE'),
+    buyUrl: 'https://blinkit.com/prn/apple-airtag/prid/619597',
+  },
+  {
+    id: 'safety-keychain',
+    name: 'Devil Will Emergency Safety Keychain',
+    category: 'Safety Keychain',
+    description: 'Emergency keychain with protection tools for women safety.',
+    imageUrl: productSvg('🔑', '#FED7AA'),
+    buyUrl: 'https://www.amazon.in/Devil-Will-Emergency-Keychain-Protection/dp/B0BPPZFZJD/ref=sr_1_1_sspa?crid=2R4HPD4OPX37L&dib=eyJ2IjoiMSJ9.-A6UvuZ2sU9cNaVzQcV0r8Qh3DQgO7hgj8liH1oP2kUIuHySC8XVf8stI8n3utOiK8M-Ex5xr97ZCQ5fd4T2VK0UT3QK_BpnT2Q61-qXysHV7oM1yhyc-dvJXDCQYiSHGaUWvRc_r-HxE3y8hLY8FR4jCjZcxAYM_DGSvIdeoysigOlOUnxYknuYCvIYl5O2e8o_4t7l0MCa2LKFHXY8gRgDEJHduE71icvRv6r4iTb9juEq8gWPwYB3odUELANhjf0c2Ca0r3Uvpkv3JxCg0-8BK09leqYezeyvnCIuED4.8X17TSKF831MQjN2oi-joJcVwBN6NwsD9zf4VhmFEcY&dib_tag=se&keywords=safety+key+chain&qid=1783497538&sprefix=safety+key+chai%2Caps%2C378&sr=8-1-spons&aref=bZnHmkwW3M&sp_csd=d2lkZ2V0TmFtZT1zcF9hdGY&psc=1',
+  },
+  {
+    id: 'stun-gun-flashlight',
+    name: 'Stun Gun with Flashlight',
+    category: 'Stun Device',
+    description: 'Electric self defence flashlight. Aluminium body, portable & rechargeable.',
+    imageUrl: productSvg('⚡', '#FEF9C3'),
+    buyUrl: 'https://www.amazon.in/Defence-Flashlight-Electric-Aluminium-Portable/dp/B0H5Z3VWHN/ref=sr_1_2?crid=2XG7JSIDYSULJ&dib=eyJ2IjoiMSJ9.jhZ7PAfm6IA-yGq34pt0tvZZGlVvPSJM76fRNaeFhw7VkuSB75kfzZBYjJ5vvDcUji8HepK2ayf4tud9jvTscCL1vvrtWCIHiZNgdVM20mqIpHkV6OBGWapx1FXBSjLf49XvDoKYwApZVdlDcdzDjl9O9bm3yqwDuABhK4RS89R_NFTpcA3FQ4hLXHbma54YY01qCq2Eh5rVsSVRd7WCJHERMBlJyord_x9xR4wS2oFJvEvFtSU1i8yVlndOtIXw71oh9EP7tA8EI9mjXuxIDSTCbRWyQJjpNFPPQZ_iUf0.e-wnLKruzeQvln1JGmChTUehPo1vrftdqXho9KacdTs&dib_tag=se&keywords=stun+gun+with+flashlight&qid=1783497585&sprefix=stun+gun+with+flashlig%2Caps%2C373&sr=8-2',
+  },
+  {
+    id: 'tactical-pen',
+    name: 'Tactical Self Defence Pen',
+    category: 'Self Defense',
+    description: 'Military survival pen with tungsten steel tip. Glass breaker + writing pen.',
+    imageUrl: productSvg('🖊️', '#E2E8F0'),
+    buyUrl: 'https://www.amazon.in/Origin-Joy-Tactical-Military-Survival-Tungsten/dp/B0DQWKC5S8/ref=sr_1_3?crid=11E1P0OCA6P0Z&dib=eyJ2IjoiMSJ9.B1lT0N-JWH3StpExfxUS59pdYZ42_EYY8Lg5jbXvV-dgCtjHWZSAy5eSQsB-d1V-bvlOSzPHu3ythUVr31NaVm3DZ6d_weQuCUbp4WloCwVzbShC7GVE3FsdKjPGGs_WQHAbT-Gv3JukGiMnhcfy_5uvMJQKTpQ0kAzfPsCyp36oo3vFsW-IETQTipSYQ0W0Ca8VZ7sKpPxAFlm7qFCfllPrxkbG5_C6At7dxIY8cy0VykYfWM2NIJi41QA_GungFasyeUUsms-VWm963zCIT56hHTZ48BP4wZi_gJg15S4.783QBuFNlOrNzZjSYiV7VG6ff1uy_lpy-f_5VC495Go&dib_tag=se&keywords=tactical%2Bself%2Bdefense%2Bpen&qid=1783497683&sprefix=tactical%2Bself%2Bdefense%2Bpe%2Caps%2C375&sr=8-3&th=1',
+  },
+  {
+    id: 'door-stop-alarm',
+    name: 'Door Stop Security Alarm',
+    category: 'Safety Kit',
+    description: 'Wireless window/door security alarm system. Perfect for travel & home.',
+    imageUrl: productSvg('🚪', '#CFFAFE'),
+    buyUrl: 'https://www.amazon.in/Wireless-Window-Security-System-Standard/dp/B09MJG2DYW/ref=sr_1_1_sspa?crid=AIGEWHVF4KEC&dib=eyJ2IjoiMSJ9.ODUecwk4VjevJUX3aCUL245W8bH-v4GVJRVGnIfmL4_DqwG_KpjKGNuJ3yPdPfezvYIpJc-rzrJszyu843elc7rQodWA4cWzIqNoqyuXIc-PDqal0yJPmTGgbwMivUcfrD_kidkVbHjFeWiEcGzf7QPf92VrMr1ovIj1nHLKIhvfidLdRK8OCkwmtICj7BhKspmE48skOW7Sr4Of6QvIQDsd4BxBcrLXj4_FVTzZ54vyaDoVcy-xF61y0yHXQ5A_YPGJbxTOtDiU2tX44Y5GKWpfbsoDZhnkgK0oq1urDCY.Vtghwb7fMuHzxEda-5VFDj5bcUIN6BXryj9EKfV7lf8&dib_tag=se&keywords=door+stp+security+alarm&qid=1783497744&sprefix=door+stp+security+alar%2Caps%2C374&sr=8-1-spons&aref=uLuCL7fzmE&sp_csd=d2lkZ2V0TmFtZT1zcF9hdGY&psc=1',
   },
   {
     id: 'hidden-camera-detector',
     name: 'Hidden Camera Detector',
-    category: 'Hidden Camera',
-    description: 'RF and lens detection for privacy in hotels and rentals.',
-    usage: 'Scan rooms by turning off lights and using the red LED viewer to spot hidden camera lenses.',
-    badge: 'Privacy',
-    badgeColor:
-      'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400',
-    imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuD9bm6HqimHVGv2CxEzUm630NRvp5BNg6eqn_WvY_UZ8S6xeYMWMEP1VqGcQ8zerih856l_cOyKgbjFAy4Nlu0kBV10JtHfIXN2xEZrpUr2aMsmy6yXMjF6HMXUp_wkClRIecnPwbkRjn36ZG3hYXHTaexkpoz2U_d5rs6I64D8j9zc6GtuIH-q88A1kBPS1FPzamQyG_-YYtqrLGthC0_ZnbF43xNfg0TMmo3-Mo-cxNAisHo9ERh4gL2UftVjIxdx2n1RsPvOCkc',
-    blinkitUrl: 'https://www.blinkit.com/s/hidden-camera-detector',
-    amazonUrl: 'https://www.amazon.in/s?k=hidden+camera+detector',
-  },
-  {
-    id: 'safety-keychain',
-    name: 'Safety Keychain',
-    category: 'Safety Keychain',
-    description: 'High-pitch whistle with LED light. Compact and legal to carry.',
-    usage: 'Keep on your keys or bag. Blow the whistle sharply to signal for help and use LED in dark areas.',
-    badge: 'Legal to Carry',
-    badgeColor:
-      'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
-    imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuCKEbsc4Kz6Wmxj0AfiNVJKY085EqaoVwA5xGwUlAQfyZsvxNARe-VDoq2W18N49lU5doC5YOgNqEOO-0Wrgkdx7rSJGU2kWJulxfB4yeDin2VrztVzHcsFfb1qL0QyBTNwwNT4WvXnSGqnVRHsuJCObkFfzHM39dm0b0WfF-EyJH9YFg9gh_PD98pSf43gXnTuCX1SDqaHtwfrW-C7lEwl_fp4sjE4q6ncqTR1r81q9wcZyBYPg4OryVbQNCDXq1fojotA8oV2pFQ',
-    blinkitUrl: 'https://www.blinkit.com/s/safety-keychain',
-    amazonUrl: 'https://www.amazon.in/s?k=safety+keychain+whistle',
-  },
-  {
-    id: 'gps-tracker',
-    name: 'Kavach Micro GPS',
-    category: 'GPS Tracker',
-    description: 'Discrete tracking with 30-day battery life.',
-    usage: 'Place in your bag or vehicle. Track real-time location via companion app for added safety.',
-    badge: 'Real-Time',
-    badgeColor:
-      'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
-    imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuA157Auly8MvwSnYDPQY953j0uks-e_6XfiPFIqkGn_K1yl1WTulCQkVfmRivhTpyGcNDlzRN1azMI8zEeDUOyFUX6HOcCoNo9gKLeZETt4FQwRd8jNBxjiO0cf_uSUCfgoKxc9zSTp6qUf4HF3DF1i3QfzMtBwLq-5vRdnCrWmFsw-On-OflEo47NMkxb-9GlOuYF5lwn6_gbJ-SUj91l1rNg6YQ6ZMtbGpxEbk7fwBljuX_SJOO_2JVXwp0LSNcBzYMd1_lVTJRQ',
-    blinkitUrl: 'https://www.blinkit.com/s/gps-tracker',
-    amazonUrl: 'https://www.amazon.in/s?k=mini+gps+tracker',
-  },
-  {
-    id: 'women-safety-kit',
-    name: 'Women Safety Kit',
     category: 'Safety Kit',
-    description: 'Complete safety essentials: whistle, flashlight, pepper spray, and first-aid basics.',
-    usage: 'Keep in your bag. Contains essential safety tools for emergencies — whistle, mini flashlight, small pepper spray, and adhesive bandages.',
-    badge: 'Complete Kit',
-    badgeColor:
-      'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400',
-    imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuCKEbsc4Kz6Wmxj0AfiNVJKY085EqaoVwA5xGwUlAQfyZsvxNARe-VDoq2W18N49lU5doC5YOgNqEOO-0Wrgkdx7rSJGU2kWJulxfB4yeDin2VrztVzHcsFfb1qL0QyBTNwwNT4WvXnSGqnVRHsuJCObkFfzHM39dm0b0WfF-EyJH9YFg9gh_PD98pSf43gXnTuCX1SDqaHtwfrW-C7lEwl_fp4sjE4q6ncqTR1r81q9wcZyBYPg4OryVbQNCDXq1fojotA8oV2pFQ',
-    blinkitUrl: 'https://www.blinkit.com/s/women+safety+kit',
-    amazonUrl: 'https://www.amazon.in/s?k=women+safety+kit',
-  },
-  {
-    id: 'self-defense-keychain',
-    name: 'Self-Defense Keychain Tools',
-    category: 'Safety Keychain',
-    description: 'Multi-tool keychain with glass breaker, pointed tip, and LED light.',
-    usage: 'Carry on your keyring. Use as a striking tool in self-defense, break car windows in emergency, or illuminate dark paths with the LED.',
-    badge: 'Multi-Tool',
-    badgeColor:
-      'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
-    imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuA157Auly8MvwSnYDPQY953j0uks-e_6XfiPFIqkGn_K1yl1WTulCQkVfmRivhTpyGcNDlzRN1azMI8zEeDUOyFUX6HOcCoNo9gKLeZETt4FQwRd8jNBxjiO0cf_uSUCfgoKxc9zSTp6qUf4HF3DF1i3QfzMtBwLq-5vRdnCrWmFsw-On-OflEo47NMkxb-9GlOuYF5lwn6_gbJ-SUj91l1rNg6YQ6ZMtbGpxEbk7fwBljuX_SJOO_2JVXwp0LSNcBzYMd1_lVTJRQ',
-    blinkitUrl: 'https://www.blinkit.com/s/self+defense+keychain',
-    amazonUrl: 'https://www.amazon.in/s?k=self+defense+keychain+women',
+    description: 'Anti-spy camera detector & protector. RF scanner + infrared lens finder.',
+    imageUrl: productSvg('🔍', '#FFE4E6'),
+    buyUrl: 'https://www.amazon.in/AVNISH-Hidden-Camera-Detectors-Protector/dp/B0FJ647W1V/ref=sr_1_1_sspa?crid=27G88SVLBEJAQ&dib=eyJ2IjoiMSJ9.XDS5CRmwKUa0XZV0QK4Hsmzdjp5zvoWQJO7EwSrwOq22cYDnqtbMUf-8tMC04Kzyd5flLewPfq1sSgNI2f3ac-1PE-cucNurPBxJFP7h9ydQgQeHsiamhwx_xvuF0iPaE7tbWsT9U9E1oI5JrgRNbwKIltn3oMLHVL1Wf3C5ew6qPR6fprZE0iCbdxNXhXrgi_7n79L7p9MF2gkZF5e_lumBfJ3k66gA8hiyA--f-UY.az4kkbRWspNWCEoqA80vwJ2ormMZIPycBWFHyNWqHd4&dib_tag=se&keywords=hidden+camera+detector&qid=1783497785&sprefix=hidden+camera+detect%2Caps%2C381&sr=8-1-spons&aref=liMvXMK2Ys&sp_csd=d2lkZ2V0TmFtZT1zcF9hdGY&psc=1',
   },
 ];
