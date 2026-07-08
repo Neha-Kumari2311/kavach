@@ -40,6 +40,18 @@
 
 * {
   -webkit-tap-highlight-color: transparent;
+  color-scheme: light !important;
+}
+
+html {
+  /* Scale up all text globally on mobile for better readability */
+  font-size: 18px;
+}
+
+@media (min-width: 640px) {
+  html {
+    font-size: 16px; /* Desktop stays at standard 16px */
+  }
 }
 
 body {
@@ -48,7 +60,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
   min-height: 100dvh;
   background: var(--color-surface);
-  font-size: 16px; /* Prevent mobile browsers from shrinking text below 16px */
   line-height: 1.5;
 }
 
